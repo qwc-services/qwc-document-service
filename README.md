@@ -22,8 +22,8 @@ Environment variables:
 | `JASPER_TIMEOUT`     | Timeout (s)                | 60                            |
 
 
-Usage/Development
------------------
+Usage
+-----
 
 API documentation:
 
@@ -49,7 +49,30 @@ If no extension is present in the template name, PDF is used as format.
 
 See also jasper-reporting-service README.
 
+
+Development
+-----------
+
+Create a virtual environment:
+
+    virtualenv --python=/usr/bin/python3 .venv
+
+Activate virtual environment:
+
+    source .venv/bin/activate
+
+Install requirements:
+
+    pip install -r requirements.txt
+
+Start local service:
+
+    CONFIG_PATH=/PATH/TO/CONFIGS/ python server.py
+
+
 Testing
 -------
 
-See `../testing/README.md`.
+Run all tests:
+
+    python test.py

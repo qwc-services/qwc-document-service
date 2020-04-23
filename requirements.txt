@@ -1,0 +1,7 @@
+Flask==1.0.2
+werkzeug==0.16.1
+python-dotenv==0.13.0
+Flask-JWT-Extended==3.5.1
+flask-restplus==0.12.1
+requests==2.21.0
+qwc-services-core==0.1.1

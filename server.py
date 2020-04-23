@@ -6,19 +6,15 @@ from flask import Flask, Response, abort, request, stream_with_context
 from flask_restplus import Api, Resource, fields, reqparse
 import requests
 
-# add parent dir to path, so shared modules can be imported
-path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../'))
-sys.path.insert(1, path)
-
-from service_lib.api import CaseInsensitiveArgument  # noqa: E402
-from service_lib.app import app_nocache  # noqa: E402
-from service_lib.auth import auth_manager, optional_auth, get_auth_user  # noqa: E402
-from service_lib.permission import PermissionClient  # noqa: E402
+from qwc_services_core.api import CaseInsensitiveArgument
+# from qwc_services_core.app import app_nocache
+from qwc_services_core.auth import auth_manager, optional_auth, get_auth_user
+from qwc_services_core.permission import PermissionClient
 
 
 # Flask application
 app = Flask(__name__)
-app_nocache(app)
+# app_nocache(app)
 api = Api(app, version='1.0', title='Document service API',
           description="""API for SO!MAP Document service.
 
