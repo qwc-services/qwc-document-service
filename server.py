@@ -7,14 +7,14 @@ from flask_restplus import Api, Resource, fields, reqparse
 import requests
 
 from qwc_services_core.api import CaseInsensitiveArgument
-# from qwc_services_core.app import app_nocache
+from qwc_services_core.app import app_nocache
 from qwc_services_core.auth import auth_manager, optional_auth, get_auth_user
 from qwc_services_core.permission import PermissionClient
 
 
 # Flask application
 app = Flask(__name__)
-# app_nocache(app)
+app_nocache(app)
 api = Api(app, version='1.0', title='Document service API',
           description="""API for SO!MAP Document service.
 
