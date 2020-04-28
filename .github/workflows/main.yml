@@ -1,6 +1,9 @@
 name: Publish docker image
 
-on: [push]
+on:
+  push:
+  release:
+    types: [created]
 
 jobs:
 
@@ -19,7 +22,7 @@ jobs:
             echo ::set-output name=tag::latest
           fi
 
-      - name: Publish to Registry
+      - name: Build and publish docker image
         uses: elgohr/Publish-Docker-Github-Action@2.12
         with:
           name: sourcepole/${{ github.event.repository.name }}
