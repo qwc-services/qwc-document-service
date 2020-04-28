@@ -49,6 +49,27 @@ If no extension is present in the template name, PDF is used as format.
 
 See also jasper-reporting-service README.
 
+Docker usage
+------------
+
+To run this docker image you will need a running jasper reporting service.
+
+The following steps explain how to download a jasper reporting service docker image and how to run the `qwc-document-service` with `docker-compose`.
+
+**Step 1: Clone qwc-docker**
+
+    git clone https://github.com/qwc-services/qwc-docker
+    cd qwc-docker
+
+**Step 2: Create docker-compose.yml file**
+
+    cp docker-compose-example.yml docker-compose.yml
+
+**Step 3: Start docker containers**
+
+    docker-compose up qwc-document-service
+
+For more information please visit: https://github.com/qwc-services/qwc-docker
 
 Development
 -----------
