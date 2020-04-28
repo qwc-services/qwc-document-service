@@ -2,7 +2,7 @@ import os
 import sys
 from urllib.parse import urlencode
 
-from flask import Flask, Response, abort, request, stream_with_context
+from flask import Flask, Response, abort, request, stream_with_context, jsonify
 from flask_restplus import Api, Resource, fields, reqparse
 import requests
 
@@ -93,6 +93,18 @@ class Document(Resource):
         else:
             format = 'pdf'
         return get_document(template, format)
+
+
+""" readyness probe endpoint """
+@app.route("/ready", methods=['GET'])
+def ready():
+    return jsonify({"status": "OK"})
+
+
+""" liveness probe endpoint """
+@app.route("/healthz", methods=['GET'])
+def healthz():
+    return jsonify({"status": "OK"})
 
 
 # local webserver
