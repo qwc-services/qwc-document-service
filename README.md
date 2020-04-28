@@ -7,12 +7,43 @@ The document service delivers reports from the Jasper reporting service with per
 Dependencies
 ------------
 
-* Permission service (`PERMISSION_SERVICE_URL`)
 * [Jasper reporting service](https://github.com/qwc-services/jasper-reporting-service/)
 
 
 Configuration
 -------------
+
+The static config files are stored as JSON files in `$CONFIG_PATH` with subdirectories for each tenant,
+e.g. `$CONFIG_PATH/default/*.json`. The default tenant name is `default`.
+
+### JSON config
+
+* [JSON schema](schemas/qwc-document-service.json)
+* File location: `$CONFIG_PATH/<tenant>/documentConfig.json`
+
+Example:
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json",
+  "service": "document",
+  "config": {
+    "jasper_service_url": "http://localhost:8002/reports",
+    "jasper_timeout": 60
+  },
+  "resources": {
+    "document_templates": [
+      {
+        "template": "demo",
+        "report_filename": "PieChartReport"
+      }
+    ]
+  }
+}
+```
+
+### Environment variables
+
+Config options in the config file can be overridden by equivalent uppercase environment variables.
 
 Environment variables:
 

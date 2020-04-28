@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json",
+  "title": "QWC Document Service",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "title": "JSON Schema",
+      "description": "Reference to JSON schema of this config",
+      "type": "string",
+      "format": "uri",
+      "default": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json"
+    },
+    "service": {
+      "title": "Service name",
+      "type": "string",
+      "const": "document"
+    },
+    "config": {
+      "title": "Config options",
+      "type": "object",
+      "properties": {
+        "jasper_service_url": {
+          "description": "Jasper Reporting service URL for generating reports. Example: http://localhost:8002/reports",
+          "type": "string",
+          "format": "uri"
+        },
+        "jasper_timeout": {
+          "description": "Timeout for requests forwarded to Jasper Reporting service",
+          "type": "integer",
+          "default": 60
+        }
+      },
+      "required": [
+        "jasper_service_url"
+      ]
+    },
+    "resources": {
+      "title": "Resources",
+      "type": "object",
+      "properties": {
+        "document_templates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "template": {
+                "type": "string"
+              },
+              "report_filename": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "template",
+              "report_filename"
+            ]
+          }
+        }
+      },
+      "required": [
+        "document_templates"
+      ]
+    }
+  },
+  "required": [
+    "service",
+    "config",
+    "resources"
+  ]
+}
