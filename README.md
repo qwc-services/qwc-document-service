@@ -1,3 +1,6 @@
+[![](https://github.com/qwc-services/qwc-document-service/workflows/build/badge.svg)](https://hub.docker.com/repository/docker/sourcepole/qwc-document-service)
+[![](https://img.shields.io/docker/pulls/sourcepole/qwc-document-service)](https://hub.docker.com/repository/docker/sourcepole/qwc-document-service)
+
 Document service
 ================
 
