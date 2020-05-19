@@ -4,4 +4,4 @@ python-dotenv==0.13.0
 Flask-JWT-Extended==3.5.1
 flask-restplus==0.12.1
 requests==2.21.0
-qwc-services-core==0.1.2
+qwc-services-core==0.1.4
