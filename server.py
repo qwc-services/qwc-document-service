@@ -3,7 +3,7 @@ import sys
 from urllib.parse import urlencode
 
 from flask import Flask, Response, abort, request, stream_with_context, jsonify
-from flask_restplus import Api, Resource, fields, reqparse
+from flask_restx import Api, Resource, fields, reqparse
 import requests
 
 from qwc_services_core.api import CaseInsensitiveArgument
