@@ -8,8 +8,7 @@ import requests
 
 from qwc_services_core.api import CaseInsensitiveArgument
 from qwc_services_core.app import app_nocache
-from flask_jwt_extended import jwt_optional, get_jwt_identity
-from qwc_services_core.jwt import jwt_manager
+from qwc_services_core.auth import auth_manager, optional_auth, get_auth_user
 from qwc_services_core.tenant_handler import TenantHandler
 from qwc_services_core.runtime_config import RuntimeConfig
 from qwc_services_core.permissions_reader import PermissionsReader
@@ -29,7 +28,7 @@ app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 # disable verbose 404 error message
 app.config['ERROR_404_HELP'] = False
 
-auth = jwt_manager(app, api)
+auth = auth_manager(app, api)
 
 tenant_handler = TenantHandler(app.logger)
 config_handler = RuntimeConfig("document", app.logger)
@@ -49,7 +48,7 @@ def get_document(tenant, template, format):
     resources = config.resources().get('document_templates', [])
     permissions_handler = PermissionsReader(tenant, app.logger)
     permitted_resources = permissions_handler.resource_permissions(
-        'document_templates', get_jwt_identity()
+        'document_templates', get_auth_user()
     )
     if template in permitted_resources:
         resource = list(filter(
@@ -84,7 +83,7 @@ def get_document(tenant, template, format):
 @api.param('template', 'The report template')
 class Document(Resource):
     @api.doc('document')
-    @jwt_optional
+    @optional_auth
     def get(self, template):
         """Request document
 
