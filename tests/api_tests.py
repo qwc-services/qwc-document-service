@@ -6,7 +6,6 @@ from flask import Response, json
 from flask.testing import FlaskClient
 from flask_jwt_extended import JWTManager, create_access_token
 
-
 import server
 
 
