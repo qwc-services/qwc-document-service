@@ -6,8 +6,6 @@ from flask import Response, json
 from flask.testing import FlaskClient
 from flask_jwt_extended import JWTManager, create_access_token
 
-os.environ["JASPER_SERVICE_URL"] = "http://localhost:6000"
-
 import server
 
 
@@ -27,42 +25,69 @@ class ApiTestCase(unittest.TestCase):
             access_token = create_access_token('test')
         return {'Authorization': 'Bearer {}'.format(access_token)}
 
-    def test_getdocument(self):
+    def test_getdocument_pdf(self):
         params = {
-            'x': 123,
-            'y': 456,
-            'foo': 'bar'
+            "format": "pdf",
+            "MaxOrderID": "10800"
         }
-        response = self.app.get('/test_template?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
         self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(isinstance(response.data, bytes), "Response is not a valid PDF")
 
-        response_data = json.loads(response.data)
-        data = json.loads(response.data)
-        self.assertRegex(data['path'], r'^[\w-]+/Blank_A4/$', 'Report template name mismatch')
-        self.assertEqual('GET', data['method'], 'Method mismatch')
-        jasper_params = data['params']
-        for param in params.keys():
-            self.assertTrue(param in jasper_params, "Parameter %s missing in response" % param)
-            self.assertEqual(jasper_params[param], str(params[param]), "Parameter %s mismatch" % param)
-        self.assertTrue('format' in jasper_params, "Parameter %s missing in response" % 'format')
-        self.assertEqual(jasper_params['format'], 'pdf', "Parameter %s mismatch" % 'format')
+    def test_getdocument_html(self):
+        params = {
+            "format": "html",
+            "MaxOrderID": "10800"
+        }
+        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+
+        success = False
+        try:
+            html = response.data.decode("utf-8")
+            success = html.startswith("<html")
+        except Exception as e:
+            print(e)
+            success = False
+
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+
+    def test_getdocument_csv(self):
+        params = {
+            "format": "csv",
+            "MaxOrderID": "10800"
+        }
+        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+
+        success = False
+        try:
+
+            csv = response.data.decode("utf-8")
+            success = True
+        except Exception as e:
+            print(e)
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid CSV")
 
     def test_getdocument_xls(self):
         params = {
-            'x': 123,
-            'y': 456,
-            'foo': 'bar'
+            "format": "xls",
+            "MaxOrderID": "10800"
         }
-        response = self.app.get('/test_template.xls?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
         self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(isinstance(response.data, bytes), "Response is not a valid XLS")
 
-        response_data = json.loads(response.data)
-        data = json.loads(response.data)
-        self.assertRegex(data['path'], r'^[\w-]+/Blank_A4/$', 'Report template name mismatch')
-        self.assertEqual('GET', data['method'], 'Method mismatch')
-        jasper_params = data['params']
-        for param in params.keys():
-            self.assertTrue(param in jasper_params, "Parameter %s missing in response" % param)
-            self.assertEqual(jasper_params[param], str(params[param]), "Parameter %s mismatch" % param)
-        self.assertTrue('format' in jasper_params, "Parameter %s missing in response" % 'format')
-        self.assertEqual(jasper_params['format'], 'xls', "Parameter %s mismatch" % 'format')
+    def test_getdocument_xlsx(self):
+        params = {
+            "format": "xlsx",
+            "MaxOrderID": "10800"
+        }
+        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(isinstance(response.data, bytes), "Response is not a valid XLSX")
+
+    def test_getdocument_404(self):
+        response = self.app.get('/test', headers=self.jwtHeader())
+        self.assertEqual(404, response.status_code, "Status code is not OK")
