@@ -1,6 +1,6 @@
 name: build
 
-on: [push, pull_request, release]
+on: [push, pull_request]
 
 jobs:
     test:
@@ -36,10 +36,11 @@ jobs:
     build:
       needs: test
       runs-on: ubuntu-latest
-      if: github.event_name == 'release' && github.event.action == 'created'
+      if: github.event_name == 'push'
       steps:
 
       - uses: actions/checkout@master
+
       - name: Get version tag
         id: get_tag
         run: |
