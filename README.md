@@ -1,5 +1,5 @@
 [![](https://github.com/qwc-services/qwc-document-service/workflows/build/badge.svg)](https://github.com/qwc-services/qwc-document-service/actions)
-[![](https://img.shields.io/docker/pulls/sourcepole/qwc-document-service)](https://hub.docker.com/r/sourcepole/qwc-document-service)
+[![docker](https://img.shields.io/docker/v/sourcepole/qwc-document-service?label=Docker%20image&sort=semver)](https://hub.docker.com/r/sourcepole/qwc-document-service)
 
 Document service
 ================
