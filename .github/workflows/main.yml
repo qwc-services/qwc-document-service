@@ -18,8 +18,8 @@ jobs:
       - name: Start demo database
         run: |
           cd qwc-docker
-          sed -i 's|jasper-reporting-service:8080|localhost:8002|' demo-config/default/documentConfig.json
-          sed -i 's|\"document_templates\": \[\]|\"document_templates\": \[\"demo\"\]|g' demo-config/default/permissions.json
+          sed -i 's|jasper-reporting-service:8080|localhost:8002|' volumes/config/default/documentConfig.json
+          sed -i 's|\"document_templates\": \[\]|\"document_templates\": \[\"demo\"\]|g' volumes/config/default/permissions.json
           docker-compose -f docker-compose-example.yml up -d jasper-reporting-service
 
       - name: Setting up python 3.6
@@ -31,7 +31,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
-          CONFIG_PATH=$PWD/qwc-docker/demo-config/ python test.py
+          CONFIG_PATH=$PWD/qwc-docker/volumes/config/ python test.py
 
     build:
       needs: test
