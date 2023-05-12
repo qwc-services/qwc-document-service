@@ -20,7 +20,7 @@ jobs:
           cd qwc-docker
           sed -i 's|jasper-reporting-service:8080|localhost:8002|' volumes/config/default/documentConfig.json
           sed -i 's|\"document_templates\": \[\]|\"document_templates\": \[\"demo\"\]|g' volumes/config/default/permissions.json
-          docker run -p 127.0.0.1:8002:8080 -d -v $PWD/volumes/jasper-reports/config:/srv/jasper-reporting-service/config:ro -v $PWD/volumes/jasper-reports/demo:/srv/jasper-reporting-service/demo:ro sourcepole/jasper-reporting-service:v2021.12.17
+          docker run -p 127.0.0.1:8002:8080 -d -v $PWD/volumes/jasper-reports/config:/srv/jasper-reporting-service/config:ro -v $PWD/volumes/jasper-reports/demo:/srv/jasper-reporting-service/demo:ro sourcepole/jasper-reporting-service:v2023.05.12
 
       - name: Setting up python 3.10
         uses: actions/setup-python@v2
