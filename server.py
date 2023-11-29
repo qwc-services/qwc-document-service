@@ -8,7 +8,7 @@ import requests
 
 from qwc_services_core.api import CaseInsensitiveArgument
 from qwc_services_core.app import app_nocache
-from qwc_services_core.auth import auth_manager, optional_auth, get_auth_user
+from qwc_services_core.auth import auth_manager, optional_auth, get_identity
 from qwc_services_core.tenant_handler import TenantHandler
 from qwc_services_core.runtime_config import RuntimeConfig
 from qwc_services_core.permissions_reader import PermissionsReader
@@ -48,7 +48,7 @@ def get_document(tenant, template, format):
     resources = config.resources().get('document_templates', [])
     permissions_handler = PermissionsReader(tenant, app.logger)
     permitted_resources = permissions_handler.resource_permissions(
-        'document_templates', get_auth_user()
+        'document_templates', get_identity()
     )
     if template in permitted_resources:
         resource = list(filter(
