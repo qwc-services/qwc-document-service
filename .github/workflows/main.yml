@@ -23,7 +23,7 @@ jobs:
           docker run -p 127.0.0.1:8002:8080 -d -v $PWD/volumes/jasper-reports/config:/srv/jasper-reporting-service/config:ro -v $PWD/volumes/jasper-reports/demo:/srv/jasper-reporting-service/demo:ro sourcepole/jasper-reporting-service:v2023.05.12
 
       - name: Setting up python 3.12
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
             python-version: '3.12'
 
