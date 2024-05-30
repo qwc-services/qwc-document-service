@@ -55,6 +55,48 @@ Environment variables:
 | `JASPER_SERVICE_URL` | Jasper Reports service URL | http://localhost:8002/reports |
 | `JASPER_TIMEOUT`     | Timeout (s)                | 60                            |
 
+### Permissions
+
+- [JSON schema](https://github.com/qwc-services/qwc-services-core/blob/master/schemas/qwc-services-permissions.json)
+- File location: `$CONFIG_PATH/<tenant>/permissions.json`
+
+Example:
+
+```
+{
+  "$schema": "https://raw.githubusercontent.com/qwc-services/qwc-services-core/master/schemas/qwc-services-permissions.json",
+  "users": [
+    {
+      "name": "demo",
+      "groups": ["demo"],
+      "roles": []
+    }
+  ],
+  "groups": [
+    {
+      "name": "demo",
+      "roles": ["demo"]
+    }
+  ],
+  "roles": [
+    {
+      "role": "public",
+      "permissions": {
+        "document_templates": [
+          "demo",
+          "another demo"
+        ]
+      }
+    },
+    {
+      "role": "demo",
+      "permissions": {
+        "document_templates": []
+      }
+    }
+  ]
+}
+```
 
 Usage
 -----
