@@ -27,24 +27,22 @@ class ApiTestCase(unittest.TestCase):
 
     def test_getdocument_pdf(self):
         params = {
-            "format": "pdf",
-            "MaxOrderID": "10800"
+            "TEST_PARAM": "FooBarBaz"
         }
-        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/test_report.pdf?' + urlencode(params), headers=self.jwtHeader())
         self.assertEqual(200, response.status_code, "Status code is not OK")
         self.assertTrue(isinstance(response.data, bytes), "Response is not a valid PDF")
 
     def test_getdocument_html(self):
         params = {
-            "format": "html",
-            "MaxOrderID": "10800"
+            "TEST_PARAM": "FooBarBaz"
         }
-        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/test_report.html?' + urlencode(params), headers=self.jwtHeader())
 
         success = False
         try:
             html = response.data.decode("utf-8")
-            success = html.startswith("<html")
+            success = "<html" in html and "FooBarBaz" in html
         except Exception as e:
             print(e)
             success = False
@@ -54,40 +52,36 @@ class ApiTestCase(unittest.TestCase):
 
     def test_getdocument_csv(self):
         params = {
-            "format": "csv",
-            "MaxOrderID": "10800"
+            "TEST_PARAM": "FooBarBaz"
         }
-        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/test_report.csv?' + urlencode(params), headers=self.jwtHeader())
 
         success = False
         try:
 
             csv = response.data.decode("utf-8")
-            success = True
+            success = "FooBarBaz" in csv
         except Exception as e:
             print(e)
             success = False
         self.assertEqual(200, response.status_code, "Status code is not OK")
         self.assertTrue(success, "Response is not a valid CSV")
 
-    def test_getdocument_xls(self):
+    def test_getdocument_bad_format(self):
         params = {
-            "format": "xls",
-            "MaxOrderID": "10800"
+            "TEST_PARAM": "FooBarBaz"
         }
-        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
-        self.assertEqual(200, response.status_code, "Status code is not OK")
-        self.assertTrue(isinstance(response.data, bytes), "Response is not a valid XLS")
+        response = self.app.get('/test_report.badformat?' + urlencode(params), headers=self.jwtHeader())
+        self.assertEqual(400, response.status_code, "Status code is 400")
 
     def test_getdocument_xlsx(self):
         params = {
-            "format": "xlsx",
-            "MaxOrderID": "10800"
+            "TEST_PARAM": "FooBarBaz"
         }
-        response = self.app.get('/demo?' + urlencode(params), headers=self.jwtHeader())
+        response = self.app.get('/test_report.xlsx?' + urlencode(params), headers=self.jwtHeader())
         self.assertEqual(200, response.status_code, "Status code is not OK")
         self.assertTrue(isinstance(response.data, bytes), "Response is not a valid XLSX")
 
     def test_getdocument_404(self):
-        response = self.app.get('/test', headers=self.jwtHeader())
-        self.assertEqual(404, response.status_code, "Status code is not OK")
+        response = self.app.get('/missing_report', headers=self.jwtHeader())
+        self.assertEqual(404, response.status_code, "Status code is 404")

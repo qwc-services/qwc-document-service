@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json",
+  "service": "document",
+  "config": {
+    "report_dir": "tests"
+  },
+  "resources": {
+    "document_templates": [
+    ]
+  }
+}

@@ -6,12 +6,44 @@ Document service
 
 The document service delivers reports from the Jasper reporting service with permission control.
 
+Report source files (`*.jrxml`) must be placed below the `report_dir` (see config below).
 
-Dependencies
-------------
+The reports are then referenced by their template name, which corresponds to their path below `report_dir`, without extension.
 
-* [Jasper reporting service](https://github.com/qwc-services/jasper-reporting-service/)
+For instance `report_dir` is `/path/to/report/dir`, then the template name for
 
+     /path/to/report/dir/topic/myreport.jrxml
+
+is `topic/myreport`.
+
+The request format is
+
+    http://localhost:5018/<template>.<ext>?<key>=<value>&...
+
+where
+
+* `ext` is a supported report format (`pdf`, `html`, `csv`, `docx`, `ods`, `odt`, `pptx`, `rtf`, `xlsx`, `xml`). If not specified, `pdf` is assumed.
+* Query KVPs are passed to the Jasper as report parameters.
+
+Example request:
+
+    http://localhost:5018/topic/myreport.pdf?FEATURE_ID=1
+
+If your report uses a PostgresSQL data adapter, use the name of the desired PG service connection as data adapter name in the report, and the connection will be automatically looked up from the `pg_service.conf` file. Alternatively, you can set the name of the desired PG service connection as `datasource` of in the service resource configuration, see below.
+
+If your report includes external resources (i.e. images), place these below the `report_dir` and, add a `REPORT_DIR` parameter of type `java.lang.String` in the `.jrxml` and use `$P{REPORT_DIR}` in the resource location expression, for example:
+
+    $P{REPORT_DIR} + "mysubfolder/myimage.png"
+
+If your report requires extra fonts, place the `*.ttfs` below the `src/fonts` directory (when running locally) resp. mount them inside the `/srv/qwc_service/fonts/` when running as docker container. Font names must respect the following naming convention:
+
+- Regular: `<FontName>.ttf` or `<FontName>-Regular.ttf`
+- Bold: `<FontName>-Bold.ttf`
+- Italic: `<FontName>-Italic.ttf`
+- BoldItalic: `<FontName>-BoldItalic.ttf`
+
+
+Set `FLASK_DEBUG=1` to get additional logging output.
 
 Configuration
 -------------
@@ -30,14 +62,13 @@ Example:
   "$schema": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json",
   "service": "document",
   "config": {
-    "jasper_service_url": "http://localhost:8002/reports",
-    "jasper_timeout": 60
+    "report_dir": "/path/to/report/dir"
   },
   "resources": {
     "document_templates": [
       {
         "template": "demo",
-        "report_filename": "PieChartReport"
+        "datasource": "<pgservice_name>"
       }
     ]
   }
@@ -47,13 +78,6 @@ Example:
 ### Environment variables
 
 Config options in the config file can be overridden by equivalent uppercase environment variables.
-
-Environment variables:
-
-| Variable             | Description                | Default value                 |
-|----------------------|----------------------------|-------------------------------|
-| `JASPER_SERVICE_URL` | Jasper Reports service URL | http://localhost:8002/reports |
-| `JASPER_TIMEOUT`     | Timeout (s)                | 60                            |
 
 ### Permissions
 
@@ -122,8 +146,6 @@ The format of the report is extracted from the template name, i.e.
     http://localhost:5018/BelasteteStandorte.xls?feature=123
 
 If no extension is present in the template name, PDF is used as format.
-
-See also jasper-reporting-service README.
 
 Docker usage
 ------------
