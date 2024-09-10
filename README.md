@@ -42,7 +42,6 @@ If your report requires extra fonts, place the `*.ttfs` below the `src/fonts` di
 - Italic: `<FontName>-Italic.ttf`
 - BoldItalic: `<FontName>-BoldItalic.ttf`
 
-
 Set `FLASK_DEBUG=1` to get additional logging output.
 
 Configuration
@@ -183,6 +182,7 @@ Activate virtual environment:
 Install requirements:
 
     pip install -r requirements.txt
+    wget -P src/libs -i libs.txt
 
 Start local service:
 
@@ -194,4 +194,4 @@ Testing
 
 Run all tests:
 
-    python test.py
+    FLASK_DEBUG=1 PYTHONPATH=$PWD/src FONT_DIR=$PWD/tests/fonts CONFIG_PATH=$PWD/tests/config/ python test.py

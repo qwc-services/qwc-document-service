@@ -67,7 +67,7 @@ class ReportCompiler:
 
 
         # Load custom fonts
-        custom_fonts_dir = os.path.join(os.path.dirname(__file__), 'fonts')
+        custom_fonts_dir = os.getenv("FONT_DIR", os.path.join(os.path.dirname(__file__), 'fonts'))
         self.logger.info("Looking for additional fonts in %s" % custom_fonts_dir)
         custom_fonts = {}
         for fontpath in glob.glob(os.path.join(custom_fonts_dir, "*.ttf")):
