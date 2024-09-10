@@ -34,7 +34,6 @@
         }
       },
       "required": [
-        "jasper_service_url"
       ]
     },
     "resources": {
@@ -49,13 +48,12 @@
               "template": {
                 "type": "string"
               },
-              "report_filename": {
+              "datasource": {
                 "type": "string"
               }
             },
             "required": [
-              "template",
-              "report_filename"
+              "template"
             ]
           }
         }
