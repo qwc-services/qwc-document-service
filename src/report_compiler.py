@@ -10,6 +10,12 @@ import shutil
 import tempfile
 from xml.etree import ElementTree
 from flask import abort, send_file
+from sqlalchemy.sql import text as sql_text
+
+from qwc_services_core.database import DatabaseEngine
+
+
+db_engine = DatabaseEngine()
 
 
 class ReportCompiler:
@@ -43,11 +49,13 @@ class ReportCompiler:
         self.JasperExportManager = jpype.JPackage('net').sf.jasperreports.engine.JasperExportManager
         self.JREmptyDataSource = jpype.JPackage('net').sf.jasperreports.engine.JREmptyDataSource
         self.SimpleExporterInput = jpype.JPackage('net').sf.jasperreports.export.SimpleExporterInput
+        self.SimpleExporterInputItem = jpype.JPackage('net').sf.jasperreports.export.SimpleExporterInputItem
         self.SimpleHtmlExporterOutput = jpype.JPackage('net').sf.jasperreports.export.SimpleHtmlExporterOutput
         self.SimpleOutputStreamExporterOutput = jpype.JPackage('net').sf.jasperreports.export.SimpleOutputStreamExporterOutput
         self.SimpleWriterExporterOutput = jpype.JPackage('net').sf.jasperreports.export.SimpleWriterExporterOutput
         self.SimpleXmlExporterOutput = jpype.JPackage('net').sf.jasperreports.export.SimpleXmlExporterOutput
         self.ByteArrayOutputStream = jpype.JPackage('java').io.ByteArrayOutputStream
+        self.JRPdfExporter = jpype.JPackage('net').sf.jasperreports.engine.export.JRPdfExporter
         self.HtmlExporter = jpype.JPackage('net').sf.jasperreports.engine.export.HtmlExporter
         self.JRCsvExporter = jpype.JPackage('net').sf.jasperreports.engine.export.JRCsvExporter
         self.JRDocxExporter = jpype.JPackage('net').sf.jasperreports.engine.export.ooxml.JRDocxExporter
@@ -169,8 +177,13 @@ class ReportCompiler:
         template = report_filename[reportdir_idx:-6]
         self.logger.info("Report template name is %s" % template)
         resource = next((x for x in resources if x["template"] == template), None)
+        data_table = None
+        data_pkey = None
         if resource and resource.get("datasource") is not None:
             datasource = resource.get("datasource")
+            data_table = resource.get("table")
+            data_pkey = resource.get("primary_key")
+            data_param = resource.get("parameter_name")
         else:
             try:
                 datasource = root.find("jasper:property[@name='com.jaspersoft.studio.data.defaultdataadapter']", namespace).get("value")
@@ -178,16 +191,54 @@ class ReportCompiler:
                 datasource = None
         self.logger.info("Report datasource: %s" % datasource)
 
+        # Try to extract primary key and table name
+        if not compile_subreport:
+            queryString = root.find(".//jasper:queryString", namespace)
+            if queryString is not None and data_table is None or data_pkey is None:
+                statement = re.sub(r"\s+", " ", queryString.text)
+                m = re.search(r'(["A-Za-z0-9_.]+)\s+WHERE', statement)
+                if m:
+                    data_table = m.group(1)
+                m = re.search(r'(["A-Za-z0-9_.]+)\s*=\s*\$P\{(\w+)\}', statement)
+                if m:
+                    data_pkey = m.group(1).strip('"')
+                    data_param = m.group(2)
+                    self.logger.info("Data table=%s, PK=%s, param=%s " % (data_table, data_pkey, data_param))
+            if queryString is not None and (data_table is None or data_pkey is None or data_param is None):
+                self.logger.error("Unable to extract table name/primary key/parameter from query, please define them manually in the resource entry")
+                return None
+
+            # Resolve feature="*"
+            if fill_params.get("feature") == "*":
+                    db = db_engine.db_engine("postgresql:///?service="+ datasource)
+                    self.logger.info("Resolving feature=*")
+                    with db.connect() as conn:
+                        query = sql_text("SELECT {pkey} from {table}".format(pkey=data_pkey, table=data_table))
+                        result = conn.execute(query).mappings()
+                        fill_params[data_param] = list([row[data_pkey] for row in result])
+                        self.logger.info("Changed feature=* to %s=%s" % (data_param, fill_params[data_param]))
+                        del fill_params["feature"]
+            elif fill_params.get("feature") is not None:
+                fill_params[data_param] = fill_params["feature"].split(",")
+                self.logger.info("Changed feature=%s to %s=%s" % (fill_params["feature"], data_param, fill_params[data_param]))
+                del fill_params["feature"]
+
         # Iterate over parameters, try to map parameters
         parameters = root.findall(".//jasper:parameter", namespace)
         for parameter in parameters:
             parameterName = parameter.get("name")
             if parameterName in fill_params:
                 parameterClass = parameter.get("class")
-                try:
-                    fill_params[parameterName] = jpype.JClass(parameterClass)(fill_params[parameterName])
-                except:
-                    pass
+                if isinstance(fill_params[parameterName], list):
+                    try:
+                        fill_params[parameterName] = [jpype.JClass(parameterClass)(value) for value in fill_params[parameterName]]
+                    except:
+                        pass
+                else:
+                    try:
+                        fill_params[parameterName] = jpype.JClass(parameterClass)(fill_params[parameterName])
+                    except:
+                        pass
 
         # Iterate over subreports, filter out unpermitted reports, compile permitted reports
         subreports = root.findall(".//jasper:subreport", namespace)
@@ -239,7 +290,15 @@ class ReportCompiler:
             conn = self.resolve_datasource(datasource, report_filename)
             try:
                 jasperReport = self.JasperCompileManager.getInstance(self.jContext).compile(temp_report_filename)
-                return self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)
+                jasperPrints = self.ArrayList()
+                if data_param is not None:
+                    feature_ids = fill_params[data_param]
+                    for feature_id in feature_ids:
+                        fill_params[data_param] = feature_id
+                        jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
+                else:
+                    jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
+                return jasperPrints
             except Exception as e:
                 self.logger.error("Exception compiling/filling report: %s" % e)
                 return None
@@ -294,59 +353,55 @@ class ReportCompiler:
 
         # Compile report
         tmpdir = tempfile.mkdtemp()
-        jasperPrint = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources)
+        jasperPrints = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources)
         shutil.rmtree(tmpdir)
 
-        if jasperPrint is None:
+        if jasperPrints is None:
             abort(500, "Failed to compile report")
 
         # Export report
         self.logger.info("Exporting report")
+        exporter = None
         if format == "pdf":
-            try:
-                result = self.JasperExportManager.getInstance(self.jContext).exportToPdf(jasperPrint)
-            except Exception as e:
-                self.logger.error("Exception exporting report to pdf: %s" % e)
-                abort(500, "Failed to export report")
-        else:
-            exporter = None
-            if format == "html":
-                exporter = self.HtmlExporter(self.jContext)
-                output = self.SimpleHtmlExporterOutput
-            elif format == "csv":
-                exporter = self.JRCsvExporter(self.jContext)
-                output = self.SimpleWriterExporterOutput
-            elif format == "docx":
-                exporter = self.JRDocxExporter(self.jContext)
-                output = self.SimpleOutputStreamExporterOutput
-            elif format == "ods":
-                exporter = self.JROdsExporter(self.jContext)
-                output = self.SimpleOutputStreamExporterOutput
-            elif format == "odt":
-                exporter = self.JROdtExporter(self.jContext)
-                output = self.SimpleOutputStreamExporterOutput
-            elif format == "pptx":
-                exporter = self.JRPptxExporter(self.jContext)
-                output = self.SimpleOutputStreamExporterOutput
-            elif format == "rtf":
-                exporter = self.JRRtfExporter(self.jContext)
-                output = self.SimpleWriterExporterOutput
-            elif format == "xlsx":
-                exporter = self.JRXlsxExporter(self.jContext)
-                output = self.SimpleOutputStreamExporterOutput
-            elif format == "xml":
-                exporter = self.JRXmlExporter(self.jContext)
-                output = self.SimpleXmlExporterOutput
+            exporter = self.JRPdfExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        if format == "html":
+            exporter = self.HtmlExporter(self.jContext)
+            output = self.SimpleHtmlExporterOutput
+        elif format == "csv":
+            exporter = self.JRCsvExporter(self.jContext)
+            output = self.SimpleWriterExporterOutput
+        elif format == "docx":
+            exporter = self.JRDocxExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        elif format == "ods":
+            exporter = self.JROdsExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        elif format == "odt":
+            exporter = self.JROdtExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        elif format == "pptx":
+            exporter = self.JRPptxExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        elif format == "rtf":
+            exporter = self.JRRtfExporter(self.jContext)
+            output = self.SimpleWriterExporterOutput
+        elif format == "xlsx":
+            exporter = self.JRXlsxExporter(self.jContext)
+            output = self.SimpleOutputStreamExporterOutput
+        elif format == "xml":
+            exporter = self.JRXmlExporter(self.jContext)
+            output = self.SimpleXmlExporterOutput
 
-            try:
-                exporter.setExporterInput(self.SimpleExporterInput(jasperPrint))
-                outputStream = self.ByteArrayOutputStream()
-                exporter.setExporterOutput(output(outputStream))
-                exporter.exportReport()
-                result = outputStream.toByteArray()
-            except Exception as e:
-                self.logger.error("Exception exporting report to %s: %s" % (format, e))
-                abort(500, "Failed to export report")
+        try:
+            exporter.setExporterInput(self.SimpleExporterInput(jasperPrints))
+            outputStream = self.ByteArrayOutputStream()
+            exporter.setExporterOutput(output(outputStream))
+            exporter.exportReport()
+            result = outputStream.toByteArray()
+        except Exception as e:
+            self.logger.error("Exception exporting report to %s: %s" % (format, e))
+            abort(500, "Failed to export report")
 
         return send_file(
             io.BytesIO(result),

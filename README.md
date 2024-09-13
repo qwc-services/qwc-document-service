@@ -31,6 +31,24 @@ Example request:
 
 If your report uses a PostgresSQL data adapter, use the name of the desired PG service connection as data adapter name in the report, and the connection will be automatically looked up from the `pg_service.conf` file. Alternatively, you can set the name of the desired PG service connection as `datasource` of in the service resource configuration, see below.
 
+You can generically pass the generic `feature` query parameter, which will be resolved to the report feature parameter configured in the report query string. You can pass:
+
+- A single or a comma-separated list of feature ids, i.e.
+
+      http://localhost:5018/topic/myreport.pdf?feature=1,3,6,9
+
+- `*` to specify all features of the report datasource, i.e.
+
+      http://localhost:5018/topic/myreport.pdf?feature=*
+
+If multiple feature ids are specified, an aggregated report for all specified features will be returned.
+
+To map `feature` to the report feature parameter, and to resolve `feature=*`, the table name, primary key column and report feature parameter will be extracted, if possible, from the report query string, which is expected to be of the form
+
+    SELECT <...> FROM <table_name> WHERE <pk_column> = $P{<FEATURE_PARAM_NAME>}
+
+For more complex queries, you'll need to define `table`, `primary_key` and `parameter_name` in the report resource configuration, see below. Note that the value(s) of the `feature` query parameters are expected to be primary keys of the records of the table specified in the report query string.
+
 If your report includes external resources (i.e. images), place these below the `report_dir` and, add a `REPORT_DIR` parameter of type `java.lang.String` in the `.jrxml` and use `$P{REPORT_DIR}` in the resource location expression, for example:
 
     $P{REPORT_DIR} + "mysubfolder/myimage.png"
@@ -67,7 +85,10 @@ Example:
     "document_templates": [
       {
         "template": "demo",
-        "datasource": "<pgservice_name>"
+        "datasource": "<pgservice_name>",
+        "table": "<table_name>",
+        "primary_key": "<primary_key_column_name>",
+        "parameter_name": "<report_parameter_name>"
       }
     ]
   }

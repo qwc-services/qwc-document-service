@@ -50,6 +50,15 @@
               },
               "datasource": {
                 "type": "string"
+              },
+              "table": {
+                "type": "string"
+              },
+              "primary_key": {
+                "type": "string"
+              },
+              "parameter_name": {
+                "type": "string"
               }
             },
             "required": [
