@@ -31,13 +31,17 @@ class ReportCompiler:
 
     def initialize(self):
         if self.initialized == True:
-            return
+            return True
 
         # Start JVM
         libdir = os.path.join(os.path.dirname(__file__), 'libs')
         classpath = glob.glob(os.path.join(libdir, '*.jar'))
         classpath.append(libdir)
-        jpype.startJVM("-DJava.awt.headless=true", classpath=classpath)
+        try:
+            jpype.startJVM("-DJava.awt.headless=true", classpath=classpath)
+        except Exception as e:
+            self.logger.error("Failed to start JVM: %s" % str(e))
+            return False
         self.DriverManager = jpype.JPackage('java').sql.DriverManager
         self.ArrayList = jpype.JPackage('java').util.ArrayList
         self.SimpleJasperReportsContext = jpype.JPackage('net').sf.jasperreports.engine.SimpleJasperReportsContext
@@ -118,6 +122,7 @@ class ReportCompiler:
                 self.pgservices[section] = dict(config.items(section))
 
         self.initialized = True
+        return True
 
     def resolve_datasource(self, datasource, report_filename):
         """ Return a DB connection for a datasource name.
@@ -154,7 +159,9 @@ class ReportCompiler:
             :param permitted_resources list: List of permitted resources
             :param compile_subreport bool: Whether a subreport is being compiled
         """
-        self.initialize()
+        if not self.initialize():
+            return None
+
         self.logger.info("Processing report %s" % report_filename)
         reportdir_idx = len(os.path.abspath(self.report_dir)) + 1
         # Copy to temp dir
