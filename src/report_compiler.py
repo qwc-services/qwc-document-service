@@ -186,6 +186,7 @@ class ReportCompiler:
         resource = next((x for x in resources if x["template"] == template), None)
         data_table = None
         data_pkey = None
+        data_param = None
         if resource and resource.get("datasource") is not None:
             datasource = resource.get("datasource")
             data_table = resource.get("table")
@@ -199,7 +200,7 @@ class ReportCompiler:
         self.logger.info("Report datasource: %s" % datasource)
 
         # Try to extract primary key and table name
-        if not compile_subreport:
+        if not compile_subreport and datasource and datasource != "NO_DATA_ADAPTER":
             queryString = root.find(".//jasper:queryString", namespace)
             if queryString is not None and data_table is None or data_pkey is None:
                 statement = re.sub(r"\s+", " ", queryString.text)
