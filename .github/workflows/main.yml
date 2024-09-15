@@ -15,6 +15,15 @@ jobs:
           repository: qwc-services/qwc-docker
           path: qwc-docker
 
+      - name: Start demo database
+        run: |
+          cd qwc-docker
+          cp pg_service.conf ~/.pg_service.conf
+          sed -i 's|host=qwc-postgis|host=localhost|g' ~/.pg_service.conf
+          sed -i 's|port=5432|port=5439|g' ~/.pg_service.conf
+          sed -Ei "s|^(\s*POSTGRES_PASSWORD:).*$|\1 'waej7WuoOoth0wor'|" docker-compose-example.yml
+          docker compose -f docker-compose-example.yml up -d qwc-postgis
+
       - name: Setting up python 3.12
         uses: actions/setup-python@v5
         with:

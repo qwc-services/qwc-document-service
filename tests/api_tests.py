@@ -85,3 +85,54 @@ class ApiTestCase(unittest.TestCase):
     def test_getdocument_404(self):
         response = self.app.get('/missing_report', headers=self.jwtHeader())
         self.assertEqual(404, response.status_code, "Status code is 404")
+
+    def test_country_report_html(self):
+        params = {
+            "feature": 5
+        }
+        response = self.app.get('/Country.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Country name: Peru" in html, "Cannot find 'Country name: Peru' in generated HTML")
+
+    def test_country_aggregated_report_html(self):
+        params = {
+            "feature": "4,5,6"
+        }
+        response = self.app.get('/Country.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Country name: Bolivia" in html, "Cannot find 'Country name: Bolivia' in generated HTML")
+        self.assertTrue("Country name: Peru" in html, "Cannot find 'Country name: Peru' in generated HTML")
+        self.assertTrue("Country name: Argentina" in html, "Cannot find 'Country name: Argentina' in generated HTML")
+
+    def test_country_aggregated_all_report_html(self):
+        params = {
+            "feature": "*"
+        }
+        response = self.app.get('/Country.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue(html.count("Country name: ") == 255, "Generated HTML does not contain the expected number of countries")
+

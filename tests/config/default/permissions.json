@@ -7,7 +7,8 @@
       "role": "public",
       "permissions": {
         "document_templates": [
-          "test_report"
+          "test_report",
+          "Country"
         ]
       }
     }
