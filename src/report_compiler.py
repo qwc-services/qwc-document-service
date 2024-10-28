@@ -29,7 +29,7 @@ class ReportCompiler:
         self.logger = logger
         self.initialized = False
 
-    def initialize(self):
+    def initialize(self, max_memory):
         if self.initialized == True:
             return True
 
@@ -37,8 +37,9 @@ class ReportCompiler:
         libdir = os.path.join(os.path.dirname(__file__), 'libs')
         classpath = glob.glob(os.path.join(libdir, '*.jar'))
         classpath.append(libdir)
+
         try:
-            jpype.startJVM("-DJava.awt.headless=true", classpath=classpath)
+            jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, classpath=classpath)
         except Exception as e:
             self.logger.error("Failed to start JVM: %s" % str(e))
             return False
@@ -149,7 +150,7 @@ class ReportCompiler:
             self.logger.info("Connected to database %s" % (dbUrl))
             return conn
 
-    def compile_report(self, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
+    def compile_report(self, max_memory, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
         """ Compile a report (or subreport), resolving the datasource, mapping parameter values, and processing permitted subreports.
 
             :param report_filename str: The filename of the jrxml report source
@@ -159,7 +160,7 @@ class ReportCompiler:
             :param permitted_resources list: List of permitted resources
             :param compile_subreport bool: Whether a subreport is being compiled
         """
-        if not self.initialize():
+        if not self.initialize(max_memory):
             return None
 
         self.logger.info("Processing report %s" % report_filename)
@@ -261,7 +262,7 @@ class ReportCompiler:
             self.logger.info("Subreport template %s" % subreport_template)
             if os.path.exists(subreport_filename):
                 if subreport_template in permitted_resources:
-                    subreport_result = self.compile_report(subreport_filename, fill_params, tmpdir, resources, permitted_resources, True)
+                    subreport_result = self.compile_report(max_memory, subreport_filename, fill_params, tmpdir, resources, permitted_resources, True)
                     if not subreport_result:
                         self.logger.info("Failed to compile subreport %s" % subreport_filename)
                         subreportExpression.text = ""
@@ -346,6 +347,9 @@ class ReportCompiler:
         self.report_dir = config.get('report_dir', '/reports').rstrip('/')
         self.logger.info("Report dir is '%s'", self.report_dir)
 
+        max_memory = config.get('max_memory', '1024M')
+        self.logger.info("The maximum Java heap size is set to '%s'", max_memory)
+
         if template not in permitted_resources:
             self.logger.info("Missing permissions for template '%s'", template)
             abort(404, "Missing or restricted template: %s" % template)
@@ -361,7 +365,7 @@ class ReportCompiler:
 
         # Compile report
         tmpdir = tempfile.mkdtemp()
-        jasperPrints = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources)
+        jasperPrints = self.compile_report(max_memory, report_filename, fill_params, tmpdir, resources, permitted_resources)
         shutil.rmtree(tmpdir)
 
         if jasperPrints is None:

@@ -79,7 +79,8 @@ Example:
   "$schema": "https://raw.githubusercontent.com/qwc-services/qwc-document-service/master/schemas/qwc-document-service.json",
   "service": "document",
   "config": {
-    "report_dir": "/path/to/report/dir"
+    "report_dir": "/path/to/report/dir",
+    "max_memory": "1024M"
   },
   "resources": {
     "document_templates": [
