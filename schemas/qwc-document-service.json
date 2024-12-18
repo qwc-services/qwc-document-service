@@ -36,6 +36,28 @@
           "description": "Maximum Java heap size for compiling like 1024M or 2G.",
           "type": "string",
           "default": "1024M"
+        },
+        "virtualizer": {
+          "title": "JRSwapFileVirtualizer",
+          "description": "If configuration is set, a JRSwapFileVirtualizer is used for report generation.",
+          "type": "object",
+          "properties": {
+            "swapfile_blocksize": {
+              "description": "The size of the blocks allocated by the swap file.",
+              "type": "integer",
+              "default": 4096
+            },
+            "swapfile_mingrowcount": {
+              "description": "The minimum number of blocks by which the swap file grows when full.",
+              "type": "integer",
+              "default": 100
+            },
+            "virtualizer_maxsize": {
+              "description": "The maximum size (in JRVirtualizable objects) of the paged in cache.",
+              "type": "integer",
+              "default": 5
+            }
+          }
         }
       },
       "required": [

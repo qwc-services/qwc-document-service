@@ -52,6 +52,9 @@ class ReportCompiler:
         self.JasperCompileManager = jpype.JPackage('net').sf.jasperreports.engine.JasperCompileManager
         self.JasperFillManager = jpype.JPackage('net').sf.jasperreports.engine.JasperFillManager
         self.JasperExportManager = jpype.JPackage('net').sf.jasperreports.engine.JasperExportManager
+        self.JRSwapFile = jpype.JPackage('net').sf.jasperreports.engine.util.JRSwapFile
+        self.JRSwapFileVirtualizer = jpype.JPackage('net').sf.jasperreports.engine.fill.JRSwapFileVirtualizer
+        self.JRParameter = jpype.JPackage('net').sf.jasperreports.engine.JRParameter
         self.JREmptyDataSource = jpype.JPackage('net').sf.jasperreports.engine.JREmptyDataSource
         self.SimpleExporterInput = jpype.JPackage('net').sf.jasperreports.export.SimpleExporterInput
         self.SimpleExporterInputItem = jpype.JPackage('net').sf.jasperreports.export.SimpleExporterInputItem
@@ -150,7 +153,7 @@ class ReportCompiler:
             self.logger.info("Connected to database %s" % (dbUrl))
             return conn
 
-    def compile_report(self, max_memory, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
+    def compile_report(self, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
         """ Compile a report (or subreport), resolving the datasource, mapping parameter values, and processing permitted subreports.
 
             :param report_filename str: The filename of the jrxml report source
@@ -160,8 +163,6 @@ class ReportCompiler:
             :param permitted_resources list: List of permitted resources
             :param compile_subreport bool: Whether a subreport is being compiled
         """
-        if not self.initialize(max_memory):
-            return None
 
         self.logger.info("Processing report %s" % report_filename)
         reportdir_idx = len(os.path.abspath(self.report_dir)) + 1
@@ -262,7 +263,7 @@ class ReportCompiler:
             self.logger.info("Subreport template %s" % subreport_template)
             if os.path.exists(subreport_filename):
                 if subreport_template in permitted_resources:
-                    subreport_result = self.compile_report(max_memory, subreport_filename, fill_params, tmpdir, resources, permitted_resources, True)
+                    subreport_result = self.compile_report(subreport_filename, fill_params, tmpdir, resources, permitted_resources, True)
                     if not subreport_result:
                         self.logger.info("Failed to compile subreport %s" % subreport_filename)
                         subreportExpression.text = ""
@@ -323,6 +324,12 @@ class ReportCompiler:
         :param str format: Document format
         """
 
+        max_memory = config.get('max_memory', '1024M')
+        self.logger.info("The maximum Java heap size is set to '%s'", max_memory)
+
+        if not self.initialize(max_memory):
+            return None
+
         supported_formats = {
             "pdf": "application/pdf",
             "html": "text/html",
@@ -347,9 +354,6 @@ class ReportCompiler:
         self.report_dir = config.get('report_dir', '/reports').rstrip('/')
         self.logger.info("Report dir is '%s'", self.report_dir)
 
-        max_memory = config.get('max_memory', '1024M')
-        self.logger.info("The maximum Java heap size is set to '%s'", max_memory)
-
         if template not in permitted_resources:
             self.logger.info("Missing permissions for template '%s'", template)
             abort(404, "Missing or restricted template: %s" % template)
@@ -363,9 +367,22 @@ class ReportCompiler:
         # Set resource dir in fill_params
         fill_params["REPORT_DIR"] = self.report_dir + "/"
 
-        # Compile report
         tmpdir = tempfile.mkdtemp()
-        jasperPrints = self.compile_report(max_memory, report_filename, fill_params, tmpdir, resources, permitted_resources)
+
+        # Set virtualizer in fill_params
+        virtualizerConfig = config.get('virtualizer')
+
+        if virtualizerConfig:
+            swapfileBlocksize = virtualizerConfig.get('swapfile_blocksize', 4096)
+            swapfileMinGrowCount = virtualizerConfig.get('swapfile_mingrowcount', 100)
+            virtualizerMaxsize = virtualizerConfig.get('virtualizer_maxsize', 5)
+
+            swapFile = self.JRSwapFile(tmpdir, swapfileBlocksize, swapfileMinGrowCount)
+            virtualizer = self.JRSwapFileVirtualizer(virtualizerMaxsize, swapFile, True)
+            fill_params[self.JRParameter.REPORT_VIRTUALIZER] = virtualizer
+
+        # Compile report
+        jasperPrints = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources)
         shutil.rmtree(tmpdir)
 
         if jasperPrints is None:
