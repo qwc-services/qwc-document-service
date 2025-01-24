@@ -1,6 +1,6 @@
 [project]
 name = "qwc-document-service"
-version = "v2024.11.19"
+version = "v2025.01.24"
 description = "Document service"
 readme = "README.md"
 requires-python = ">=3.10"
