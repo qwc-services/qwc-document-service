@@ -232,6 +232,9 @@ class ReportCompiler:
                 fill_params[data_param] = fill_params["feature"].split(",")
                 self.logger.info("Changed feature=%s to %s=%s" % (fill_params["feature"], data_param, fill_params[data_param]))
                 del fill_params["feature"]
+            elif fill_params.get(data_param) is not None:
+                # data_param is expected to be an array
+                fill_params[data_param] = [fill_params[data_param]]
 
         # Iterate over parameters, try to map parameters
         parameters = root.findall(".//jasper:parameter", namespace)
