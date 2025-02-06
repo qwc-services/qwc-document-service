@@ -5,7 +5,7 @@ ADD pyproject.toml uv.lock ./
 ADD libs.txt /srv/qwc_service/libs.txt
 
 RUN \
-    apk add --no-cache --update --virtual runtime-deps postgresql-libs openjdk17-jdk openjdk17-jre ttf-dejavu && \
+    apk add --no-cache --update --virtual runtime-deps postgresql-libs openjdk21-jdk openjdk21-jre ttf-dejavu && \
     apk add --no-cache --update --virtual build-deps postgresql-dev g++ python3-dev && \
     uv sync --frozen && \
     mkdir /srv/qwc_service/libs && \
@@ -15,5 +15,5 @@ RUN \
 
 ADD src /srv/qwc_service/
 
-ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-17-openjdk/lib/server
+ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-21-openjdk/lib/server
 ENV SERVICE_MOUNTPOINT=/api/v1/document
