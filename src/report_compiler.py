@@ -46,6 +46,7 @@ class ReportCompiler:
             return False
         self.DriverManager = jpype.JPackage('java').sql.DriverManager
         self.ArrayList = jpype.JPackage('java').util.ArrayList
+        self.ManagementFactory = jpype.JPackage('java').lang.management.ManagementFactory
         self.SimpleJasperReportsContext = jpype.JPackage('net').sf.jasperreports.engine.SimpleJasperReportsContext
         self.SimpleFontFace = jpype.JPackage('net').sf.jasperreports.engine.fonts.SimpleFontFace
         self.FontFamily = jpype.JPackage('net').sf.jasperreports.engine.fonts.FontFamily
@@ -329,6 +330,22 @@ class ReportCompiler:
 
         return result
 
+    def human_size(self, num):
+        for unit in ("", "K", "M", "G", "T"):
+            if abs(num) < 1024.0:
+                return f"{num:3.1f}{unit}"
+            num /= 1024.0
+        return f"{num:.1f}P"
+
+    def print_memory_usage(self):
+        memory_mxbean = self.ManagementFactory.getMemoryMXBean()
+        heap_memory_usage = memory_mxbean.getHeapMemoryUsage()
+        non_heap_memory_usage = memory_mxbean.getNonHeapMemoryUsage()
+        self.logger.debug("Memory usage: heap=%s / %s, non-heap=%s / %s" % (
+            self.human_size(heap_memory_usage.getUsed()), self.human_size(heap_memory_usage.getMax()),
+            self.human_size(non_heap_memory_usage.getUsed()), self.human_size(non_heap_memory_usage.getMax()))
+        )
+
     def get_document(self, config, permitted_resources, template, fill_params, format):
         """Return report with specified template and format.
 
@@ -345,6 +362,8 @@ class ReportCompiler:
 
         if not self.initialize(max_memory):
             return None
+
+        self.print_memory_usage()
 
         supported_formats = {
             "pdf": "application/pdf",
@@ -447,6 +466,8 @@ class ReportCompiler:
         except Exception as e:
             self.logger.error("Exception exporting report to %s: %s" % (format, e))
             abort(500, "Failed to export report")
+
+        self.print_memory_usage()
 
         return send_file(
             io.BytesIO(result),
