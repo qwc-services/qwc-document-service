@@ -8,6 +8,7 @@ import os
 import re
 import shutil
 import tempfile
+import traceback
 from xml.etree import ElementTree
 from flask import abort, send_file
 from sqlalchemy.sql import text as sql_text
@@ -128,13 +129,14 @@ class ReportCompiler:
         self.initialized = True
         return True
 
-    def resolve_datasource(self, datasource, report_filename):
+    def resolve_datasource(self, datasource, report_filename, open_conns):
         """ Return a DB connection for a datasource name.
 
             The datasource name is expected to be the name of a pgservice definition.
 
             :param datasource str: The datasource name (pgservice definition name)
             :param report_filename str: The filename of the jrxml report were the datasource appears
+            :param open_conns list: List to which append opened connections which need to be closed
         """
         if datasource == "NO_DATA_ADAPTER":
             return self.JREmptyDataSource()
@@ -151,6 +153,7 @@ class ReportCompiler:
             self.logger.info("Resolved datasource %s to %s" % (datasource, dbUrl))
             conn = self.DriverManager.getConnection(dbUrl, dbUser, dbPass)
             self.logger.info("Connected to database %s" % (dbUrl))
+            open_conns.append(conn)
             return conn
 
     def compile_report(self, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
@@ -254,6 +257,7 @@ class ReportCompiler:
                         pass
 
         # Iterate over subreports, filter out unpermitted reports, compile permitted reports
+        opened_connections = []
         subreports = root.findall(".//jasper:subreport", namespace)
         for subreport in subreports:
             connectionExpression = subreport.find("./jasper:connectionExpression", namespace)
@@ -277,7 +281,7 @@ class ReportCompiler:
                         if connectionExpression is not None:
                             m = re.match(r'^\$P\{(\w+)\}$', connectionExpression.text)
                             if m:
-                                fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_filename)
+                                fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_filename, opened_connections)
                 else:
                     self.logger.info("Filtering out unpermitted report %s" % subreport_filename)
                     subreportExpression.text = ""
@@ -286,21 +290,23 @@ class ReportCompiler:
         ElementTree.register_namespace("", "http://jasperreports.sourceforge.net/jasperreports")
         ElementTree.ElementTree(root).write(temp_report_filename)
 
+        result = None
         if compile_subreport:
             # Compile subreport
             output_name = temp_report_filename[:-6] + ".jasper"
             self.logger.info("Compiling subreport %s" % template)
             try:
                 self.JasperCompileManager.getInstance(self.jContext).compileToFile(temp_report_filename, output_name)
-                return output_name, datasource
+                result = (output_name, datasource)
             except Exception as e:
                 self.logger.error("Exception compiling report: %s" % e)
-                return None
+                self.logger.debug(traceback.format_exc())
+                self.print_memory_usage()
         else:
             self.logger.info("Compiling report %s" % template)
             self.logger.info("Report parameters: %s" % str(fill_params))
             # Compile, fill and export report
-            conn = self.resolve_datasource(datasource, report_filename)
+            conn = self.resolve_datasource(datasource, report_filename, opened_connections)
             try:
                 jasperReport = self.JasperCompileManager.getInstance(self.jContext).compile(temp_report_filename)
                 jasperPrints = self.ArrayList()
@@ -311,10 +317,17 @@ class ReportCompiler:
                         jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
                 else:
                     jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
-                return jasperPrints
+                result = jasperPrints
             except Exception as e:
                 self.logger.error("Exception compiling/filling report: %s" % e)
-                return None
+                self.logger.debug(traceback.format_exc())
+                self.print_memory_usage()
+
+        # Cleanup connections
+        for conn in opened_connections:
+            conn.close()
+
+        return result
 
     def get_document(self, config, permitted_resources, template, fill_params, format):
         """Return report with specified template and format.
