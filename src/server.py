@@ -5,7 +5,8 @@ from flask_restx import Api, Resource
 
 from qwc_services_core.app import app_nocache
 from qwc_services_core.auth import auth_manager, optional_auth, get_identity
-from qwc_services_core.tenant_handler import TenantHandler
+from qwc_services_core.tenant_handler import (
+    TenantHandler, TenantPrefixMiddleware, TenantSessionInterface)
 from qwc_services_core.runtime_config import RuntimeConfig
 from qwc_services_core.permissions_reader import PermissionsReader
 from report_compiler import ReportCompiler
@@ -28,6 +29,9 @@ app.config['ERROR_404_HELP'] = False
 auth = auth_manager(app, api)
 
 tenant_handler = TenantHandler(app.logger)
+app.wsgi_app = TenantPrefixMiddleware(app.wsgi_app)
+app.session_interface = TenantSessionInterface()
+
 config_handler = RuntimeConfig("document", app.logger)
 
 report_compiler = ReportCompiler(app.logger)
