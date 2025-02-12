@@ -18,3 +18,5 @@ ADD src /srv/qwc_service/
 
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-21-openjdk/lib/server
 ENV SERVICE_MOUNTPOINT=/api/v1/document
+# Respawn service after each request
+ENV UWSGI_EXTRA="--master --processes 1 --threads 1 --max-requests 1"
