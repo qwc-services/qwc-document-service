@@ -10,7 +10,7 @@ import shutil
 import tempfile
 import traceback
 from xml.etree import ElementTree
-from flask import abort, send_file
+from flask import make_response, send_file
 from sqlalchemy.sql import text as sql_text
 
 from qwc_services_core.database import DatabaseEngine
@@ -28,22 +28,7 @@ class ReportCompiler:
         """
 
         self.logger = logger
-        self.initialized = False
 
-    def initialize(self, max_memory):
-        if self.initialized == True:
-            return True
-
-        # Start JVM
-        libdir = os.path.join(os.path.dirname(__file__), 'libs')
-        classpath = glob.glob(os.path.join(libdir, '*.jar'))
-        classpath.append(libdir)
-
-        try:
-            jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, classpath=classpath)
-        except Exception as e:
-            self.logger.error("Failed to start JVM: %s" % str(e))
-            return False
         self.DriverManager = jpype.JPackage('java').sql.DriverManager
         self.ArrayList = jpype.JPackage('java').util.ArrayList
         self.ManagementFactory = jpype.JPackage('java').lang.management.ManagementFactory
@@ -126,9 +111,6 @@ class ReportCompiler:
             config.read(pgservicefile)
             for section in config.sections():
                 self.pgservices[section] = dict(config.items(section))
-
-        self.initialized = True
-        return True
 
     def resolve_datasource(self, datasource, report_filename, open_conns):
         """ Return a DB connection for a datasource name.
@@ -311,7 +293,7 @@ class ReportCompiler:
             try:
                 jasperReport = self.JasperCompileManager.getInstance(self.jContext).compile(temp_report_filename)
                 jasperPrints = self.ArrayList()
-                if data_param is not None:
+                if data_param is not None and data_param in fill_params:
                     feature_ids = fill_params[data_param]
                     for feature_id in feature_ids:
                         fill_params[data_param] = feature_id
@@ -356,13 +338,6 @@ class ReportCompiler:
         :param dict fill_params: Report fill parameters
         :param str format: Document format
         """
-
-        max_memory = config.get('max_memory', '1024M')
-        self.logger.info("The maximum Java heap size is set to '%s'", max_memory)
-
-        if not self.initialize(max_memory):
-            return None
-
         self.print_memory_usage()
 
         supported_formats = {
@@ -382,7 +357,7 @@ class ReportCompiler:
 
         if not format in supported_formats:
             self.logger.warning("Unsupported format: %s" % format)
-            abort(400, "Unsupported format: %s" % format)
+            return make_response("Unsupported format: %s" % format, 400)
 
         resources = (config.resources() or {}).get('document_templates', [])
 
@@ -391,13 +366,13 @@ class ReportCompiler:
 
         if template not in permitted_resources:
             self.logger.info("Missing permissions for template '%s'", template)
-            abort(404, "Missing or restricted template: %s" % template)
+            return make_response("Missing or restricted template: %s" % template, 404)
 
         # Resolve template by matching filename
         report_filename = os.path.abspath(os.path.join(self.report_dir, template + ".jrxml"))
         if not os.path.isfile(report_filename):
             self.logger.info("Template '%s' not found", template)
-            abort(404, "Missing or restricted template: %s" % template)
+            return make_response("Missing or restricted template: %s" % template, 404)
 
         # Set resource dir in fill_params
         fill_params["REPORT_DIR"] = self.report_dir + "/"
@@ -421,7 +396,7 @@ class ReportCompiler:
         shutil.rmtree(tmpdir)
 
         if jasperPrints is None:
-            abort(500, "Failed to compile report")
+            return make_response("Failed to compile report", 500)
 
         # Export report
         self.logger.info("Exporting report")
@@ -462,15 +437,15 @@ class ReportCompiler:
             outputStream = self.ByteArrayOutputStream()
             exporter.setExporterOutput(output(outputStream))
             exporter.exportReport()
-            result = outputStream.toByteArray()
+            result = io.BytesIO(outputStream.toByteArray())
         except Exception as e:
             self.logger.error("Exception exporting report to %s: %s" % (format, e))
-            abort(500, "Failed to export report")
+            return make_response("Failed to export report", 500)
 
         self.print_memory_usage()
 
         return send_file(
-            io.BytesIO(result),
+            result,
             download_name=os.path.splitext(os.path.basename(report_filename))[0] + "." + format,
             as_attachment=True,
             mimetype=supported_formats[format]

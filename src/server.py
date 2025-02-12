@@ -1,6 +1,11 @@
+import glob
+import jpype
+import os
 import requests
+import multiprocessing
+import traceback
 
-from flask import Flask, Response, request, jsonify
+from flask import Flask, Response, request, jsonify, make_response
 from flask_restx import Api, Resource
 
 from qwc_services_core.app import app_nocache
@@ -34,9 +39,6 @@ app.session_interface = TenantSessionInterface()
 
 config_handler = RuntimeConfig("document", app.logger)
 
-report_compiler = ReportCompiler(app.logger)
-
-
 def get_identity_or_auth(config):
     identity = get_identity()
     if not identity and config.get("basic_auth_login_url"):
@@ -59,6 +61,35 @@ def get_identity_or_auth(config):
             # raise Unauthorized(
             #     www_authenticate='Basic realm="Login Required"')
     return identity
+
+
+def get_document_worker(config, permitted_resources, template, args, format):
+    result = None
+
+    try:
+        app.logger.debug("Starting JVM")
+        libdir = os.path.join(os.path.dirname(__file__), 'libs')
+        classpath = glob.glob(os.path.join(libdir, '*.jar'))
+        classpath.append(libdir)
+
+        max_memory = config.get('max_memory', '1024M')
+        app.logger.info("The maximum Java heap size is set to '%s'", max_memory)
+
+        jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, classpath=classpath)
+
+        report_compiler = ReportCompiler(app.logger)
+        result = report_compiler.get_document(config, permitted_resources, template, dict(request.args), format)
+
+    except Exception as e:
+        app.logger.debug(str(e))
+        app.logger.debug(traceback.format_exc())
+        result = make_response("Failed to compile report", 500)
+    finally:
+        if jpype.isJVMStarted():
+            jpype.shutdownJVM()
+            app.logger.debug("Shutdown JVM")
+
+    return result
 
 
 # routes
@@ -88,7 +119,11 @@ class Document(Resource):
             template = template[:pos]
         else:
             format = 'pdf'
-        return report_compiler.get_document(config, permitted_resources, template, dict(request.args), format)
+
+        with multiprocessing.Pool(1) as pool:
+            result = pool.apply(get_document_worker, args=(config, permitted_resources, template, dict(request.args), format))
+
+        return result
 
 
 """ readyness probe endpoint """
