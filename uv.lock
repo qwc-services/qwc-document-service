@@ -428,7 +428,7 @@ wheels = [
 
 [[package]]
 name = "qwc-document-service"
-version = "2025.2.13"
+version = "2025.2.13.1"
 source = { virtual = "." }
 dependencies = [
     { name = "flask" },
