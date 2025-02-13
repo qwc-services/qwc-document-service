@@ -3,6 +3,8 @@ import jpype
 import os
 import requests
 import multiprocessing
+import shutil
+import tempfile
 import traceback
 
 from flask import Flask, Response, request, jsonify, make_response
@@ -75,7 +77,14 @@ def get_document_worker(config, permitted_resources, template, args, format):
         max_memory = config.get('max_memory', '1024M')
         app.logger.info("The maximum Java heap size is set to '%s'", max_memory)
 
-        jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, classpath=classpath)
+        tmpdir = tempfile.mkdtemp()
+        jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, "-Djava.util.logging.config.file=" + os.path.join(libdir, "logging.properties"), classpath=classpath)
+        jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
+        jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
+
+        LogFactory = jpype.JPackage('org').apache.commons.logging.LogFactory
+        log = LogFactory.getLog("TestLogger")
+        print("Logging implementation:", log.getClass().getName())
 
         report_compiler = ReportCompiler(app.logger)
         result = report_compiler.get_document(config, permitted_resources, template, dict(request.args), format)
@@ -88,6 +97,18 @@ def get_document_worker(config, permitted_resources, template, args, format):
         if jpype.isJVMStarted():
             jpype.shutdownJVM()
             app.logger.debug("Shutdown JVM")
+
+    try:
+        with open(os.path.join(tmpdir, "stdout")) as fh:
+            app.logger.debug("JVM stdout:\n" + fh.read())
+    except:
+        pass
+    try:
+        with open(os.path.join(tmpdir, "stderr")) as fh:
+            app.logger.debug("JVM stderr:\n" + fh.read())
+    except:
+        pass
+    shutil.rmtree(tmpdir)
 
     return result
 
