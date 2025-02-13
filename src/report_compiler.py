@@ -217,7 +217,8 @@ class ReportCompiler:
             elif fill_params.get("feature") is not None:
                 fill_params[data_param] = fill_params["feature"].split(",")
                 self.logger.info("Changed feature=%s to %s=%s" % (fill_params["feature"], data_param, fill_params[data_param]))
-                del fill_params["feature"]
+                if data_param != "feature":
+                    del fill_params["feature"]
             elif fill_params.get(data_param) is not None:
                 # data_param is expected to be an array
                 fill_params[data_param] = [fill_params[data_param]]
