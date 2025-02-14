@@ -82,10 +82,6 @@ def get_document_worker(config, permitted_resources, template, args, format):
         jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
         jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
 
-        LogFactory = jpype.JPackage('org').apache.commons.logging.LogFactory
-        log = LogFactory.getLog("TestLogger")
-        print("Logging implementation:", log.getClass().getName())
-
         report_compiler = ReportCompiler(app.logger)
         result = report_compiler.get_document(config, permitted_resources, template, dict(request.args), format)
 
