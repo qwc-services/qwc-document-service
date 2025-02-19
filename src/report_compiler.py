@@ -107,7 +107,7 @@ class ReportCompiler:
         self.pgservices = {}
         pgservicefile = os.getenv("PGSERVICEFILE", os.path.expanduser("~/.pg_service.conf"))
         if os.path.isfile(pgservicefile):
-            config = configparser.ConfigParser()
+            config = configparser.ConfigParser(interpolation=None)
             config.read(pgservicefile)
             for section in config.sections():
                 self.pgservices[section] = dict(config.items(section))
