@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import traceback
 
-from flask import Flask, Response, request, jsonify, make_response
+from flask import Flask, Response, request, jsonify, make_response, Blueprint
 from flask_restx import Api, Resource
 
 from qwc_services_core.app import app_nocache
@@ -21,8 +21,10 @@ from report_compiler import ReportCompiler
 
 # Flask application
 app = Flask(__name__)
+mounted_app = Blueprint('mounted_app', __name__, url_prefix=os.getenv('SERVICE_MOUNTPOINT', '/'))
+
 app_nocache(app)
-api = Api(app, version='1.0', title='Document service API',
+api = Api(mounted_app, version='1.0', title='Document service API',
           description="""API for QWC Document service.
 
 The document service delivers reports from the Jasper reporting service.
@@ -32,6 +34,8 @@ app.config.SWAGGER_UI_DOC_EXPANSION = 'list'
 
 # disable verbose 404 error message
 app.config['ERROR_404_HELP'] = False
+
+app.register_blueprint(mounted_app)
 
 auth = auth_manager(app, api)
 
