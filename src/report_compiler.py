@@ -329,7 +329,7 @@ class ReportCompiler:
             self.human_size(non_heap_memory_usage.getUsed()), self.human_size(non_heap_memory_usage.getMax()))
         )
 
-    def get_document(self, config, permitted_resources, template, fill_params, format):
+    def get_document(self, config, permitted_resources, tenant, template, fill_params, format):
         """Return report with specified template and format.
 
         :param obj config: Service config
@@ -377,6 +377,9 @@ class ReportCompiler:
 
         # Set resource dir in fill_params
         fill_params["REPORT_DIR"] = self.report_dir + "/"
+
+        # Set the tenant in fill_params
+        fill_params["TENANT"] = tenant
 
         tmpdir = tempfile.mkdtemp()
 

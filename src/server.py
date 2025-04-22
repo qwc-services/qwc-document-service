@@ -69,7 +69,7 @@ def get_identity_or_auth(config):
     return identity
 
 
-def get_document_worker(config, permitted_resources, template, args, format):
+def get_document_worker(config, permitted_resources, tenant, template, args, format):
     result = None
 
     try:
@@ -87,7 +87,7 @@ def get_document_worker(config, permitted_resources, template, args, format):
         jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
 
         report_compiler = ReportCompiler(app.logger)
-        result = report_compiler.get_document(config, permitted_resources, template, dict(request.args), format)
+        result = report_compiler.get_document(config, permitted_resources, tenant, template, dict(request.args), format)
 
     except Exception as e:
         app.logger.debug(str(e))
@@ -142,7 +142,7 @@ class Document(Resource):
             format = 'pdf'
 
         with multiprocessing.Pool(1) as pool:
-            result = pool.apply(get_document_worker, args=(config, permitted_resources, template, dict(request.args), format))
+            result = pool.apply(get_document_worker, args=(config, permitted_resources, tenant, template, dict(request.args), format))
 
         return result
 
