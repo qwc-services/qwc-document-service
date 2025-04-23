@@ -9,6 +9,7 @@ import re
 import shutil
 import tempfile
 import traceback
+import uuid
 from xml.etree import ElementTree
 from flask import make_response, send_file
 from sqlalchemy.sql import text as sql_text
@@ -211,7 +212,8 @@ class ReportCompiler:
                     with db.connect() as conn:
                         query = sql_text("SELECT {pkey} from {table}".format(pkey=data_pkey, table=data_table))
                         result = conn.execute(query).mappings()
-                        fill_params[data_param] = list([row[data_pkey] for row in result])
+                        to_str_if_uuid = lambda value: str(value) if isinstance(value, uuid.UUID) else value
+                        fill_params[data_param] = list([to_str_if_uuid(row[data_pkey]) for row in result])
                         self.logger.info("Changed feature=* to %s=%s" % (data_param, fill_params[data_param]))
                         del fill_params["feature"]
             elif fill_params.get("feature") is not None:
