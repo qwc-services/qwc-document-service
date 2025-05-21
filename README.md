@@ -43,6 +43,8 @@ You can generically pass the generic `feature` query parameter, which will be re
 
 If multiple feature ids are specified, an aggregated report for all specified features will be returned.
 
+Alternatively, provided `FEATURE_ID` is defined as a list in your report, you can pass `single_report=true`, and the entire list of feature ids will be passed to the report, which can i.e. render them in a table.
+
 To map `feature` to the report feature parameter, and to resolve `feature=*`, the table name, primary key column and report feature parameter will be extracted, if possible, from the report query string, which is expected to be of the form
 
     SELECT <...> FROM <table_name> WHERE <pk_column> = $P{<FEATURE_PARAM_NAME>}

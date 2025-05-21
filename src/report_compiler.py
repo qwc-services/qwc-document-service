@@ -140,7 +140,7 @@ class ReportCompiler:
             open_conns.append(conn)
             return conn
 
-    def compile_report(self, report_filename, fill_params, tmpdir, resources, permitted_resources, compile_subreport=False):
+    def compile_report(self, report_filename, fill_params, tmpdir, resources, permitted_resources, single_report, compile_subreport=False):
         """ Compile a report (or subreport), resolving the datasource, mapping parameter values, and processing permitted subreports.
 
             :param report_filename str: The filename of the jrxml report source
@@ -148,6 +148,7 @@ class ReportCompiler:
             :param tmpdir str: Tempdir in which to write processed .jrxml sources and compiled .jasper reports
             :param resources dict: Resource configuration
             :param permitted_resources list: List of permitted resources
+            :param single_report bool: Whether to produce single report, passing the array of feature IDs, instead of producing one report per feature
             :param compile_subreport bool: Whether a subreport is being compiled
         """
 
@@ -227,11 +228,14 @@ class ReportCompiler:
                 fill_params[data_param] = [fill_params[data_param]]
 
         # Iterate over parameters, try to map parameters
+        data_param_nested_class = None
         parameters = root.findall(".//jasper:parameter", namespace)
         for parameter in parameters:
             parameterName = parameter.get("name")
             if parameterName in fill_params:
                 parameterClass = parameter.get("class")
+                if parameterName == data_param:
+                    data_param_nested_class = parameter.get("nestedType")
                 if isinstance(fill_params[parameterName], list):
                     try:
                         fill_params[parameterName] = [jpype.JClass(parameterClass)(value) for value in fill_params[parameterName]]
@@ -257,7 +261,7 @@ class ReportCompiler:
             self.logger.info("Subreport template %s" % subreport_template)
             if os.path.exists(subreport_filename):
                 if subreport_template in permitted_resources:
-                    subreport_result = self.compile_report(subreport_filename, fill_params, tmpdir, resources, permitted_resources, True)
+                    subreport_result = self.compile_report(subreport_filename, fill_params, tmpdir, resources, permitted_resources, single_report, True)
                     if not subreport_result:
                         self.logger.info("Failed to compile subreport %s" % subreport_filename)
                         subreportExpression.text = ""
@@ -298,9 +302,16 @@ class ReportCompiler:
                 jasperReport = self.JasperCompileManager.getInstance(self.jContext).compile(temp_report_filename)
                 jasperPrints = self.ArrayList()
                 if data_param is not None and data_param in fill_params:
-                    feature_ids = fill_params[data_param]
-                    for feature_id in feature_ids:
-                        fill_params[data_param] = feature_id
+                    if not single_report:
+                        feature_ids = fill_params[data_param]
+                        for feature_id in feature_ids:
+                            fill_params[data_param] = feature_id
+                            jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
+                    else:
+                        data_param_list = self.ArrayList()
+                        for value in fill_params[data_param]:
+                            data_param_list.add(jpype.JClass(data_param_nested_class)(value))
+                        fill_params[data_param] = data_param_list
                         jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
                 else:
                     jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
@@ -384,6 +395,13 @@ class ReportCompiler:
         # Set the tenant in fill_params
         fill_params["TENANT"] = tenant
 
+        # Read/clear single_report param
+        single_report = False
+        if "single_report" in fill_params:
+            single_report = fill_params.get("single_report", "").lower() in ["1","true"]
+            del fill_params["single_report"]
+
+
         tmpdir = tempfile.mkdtemp()
 
         # Set virtualizer in fill_params
@@ -399,7 +417,7 @@ class ReportCompiler:
             fill_params[self.JRParameter.REPORT_VIRTUALIZER] = virtualizer
 
         # Compile report
-        jasperPrints = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources)
+        jasperPrints = self.compile_report(report_filename, fill_params, tmpdir, resources, permitted_resources, single_report)
         shutil.rmtree(tmpdir)
 
         if jasperPrints is None:
