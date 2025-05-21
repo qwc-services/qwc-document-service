@@ -178,15 +178,16 @@ class ReportCompiler:
         data_param = None
         if resource and resource.get("datasource") is not None:
             datasource = resource.get("datasource")
-            data_table = resource.get("table")
-            data_pkey = resource.get("primary_key")
-            data_param = resource.get("parameter_name")
         else:
             try:
                 datasource = root.find("jasper:property[@name='com.jaspersoft.studio.data.defaultdataadapter']", namespace).get("value")
             except:
                 datasource = None
         self.logger.info("Report datasource: %s" % datasource)
+        if resource:
+            data_table = resource.get("table")
+            data_pkey = resource.get("primary_key")
+            data_param = resource.get("parameter_name")
 
         # Try to extract primary key and table name
         if not compile_subreport and datasource and datasource != "NO_DATA_ADAPTER":
