@@ -27,17 +27,9 @@ RUN \
     apk del build-deps
 
 ADD src /srv/qwc_service/
+ADD entrypoint.sh /entrypoint.sh
 
 ENV LD_LIBRARY_PATH=/usr/lib/jvm/java-21-openjdk/lib/server
 ENV SERVICE_MOUNTPOINT=/api/v1/document
 
-ENTRYPOINT ["/bin/sh", "-c", "\
-    HOME=/tmp gunicorn --chdir /srv/qwc_service \
-    --bind :9090 \
-    --workers $UWSGI_PROCESSES \
-    --threads $UWSGI_THREADS \
-    --user $SERVICE_UID --group $SERVICE_GID \
-    --worker-class gthread \
-    --pythonpath /srv/qwc_service/.venv/lib/python*/site-packages \
-    --access-logfile - \
-    server:app"]
+ENTRYPOINT ["sh", "/entrypoint.sh"]
