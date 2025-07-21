@@ -101,6 +101,8 @@ class ApiTestCase(unittest.TestCase):
         self.assertEqual(200, response.status_code, "Status code is not OK")
         self.assertTrue(success, "Response is not a valid HTML")
         self.assertTrue("Country name: Peru" in html, "Cannot find 'Country name: Peru' in generated HTML")
+        self.assertTrue("Population: Less than one billion" in html, "Cannot find 'Population: Less than one billion' in generated HTML")
+
 
     def test_country_aggregated_report_html(self):
         params = {

@@ -507,18 +507,19 @@ WHERE
 		</band>
 	</title>
 	<pageHeader>
-		<band height="34" splitType="Stretch">
-			<textField>
-				<reportElement x="15" y="4" width="245" height="30" uuid="5a7b3894-65e1-468f-8555-4f0271105e7d"/>
-				<textFieldExpression><![CDATA["Country name: " + $F{name}]]></textFieldExpression>
-			</textField>
-		</band>
+		<band height="34" splitType="Stretch"/>
 	</pageHeader>
 	<columnHeader>
 		<band height="61" splitType="Stretch"/>
 	</columnHeader>
 	<detail>
-		<band height="125" splitType="Stretch"/>
+		<band height="125" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="15" width="550" height="95" uuid="5a7b3894-65e1-468f-8555-4f0271105e7d"/>
+				<textFieldExpression><![CDATA["Country name: " + $F{name} + "\n" +
+"Population: " + IF($F{pop_est}>1000000000,"More than one billion", "Less than one billion")]]></textFieldExpression>
+			</textField>
+		</band>
 	</detail>
 	<columnFooter>
 		<band height="45" splitType="Stretch"/>
