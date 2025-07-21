@@ -32,6 +32,11 @@
           "type": "string",
           "default": "/reports"
         },
+        "permit_subreports": {
+          "description": "Whether to automatically permit subreports included from a permitted parent report",
+          "type": "boolean",
+          "default": false
+        },
         "max_memory": {
           "description": "Maximum Java heap size for compiling like 1024M or 2G.",
           "type": "string",

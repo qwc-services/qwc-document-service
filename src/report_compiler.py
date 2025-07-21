@@ -260,7 +260,7 @@ class ReportCompiler:
             self.logger.info("Subreport filename %s" % subreport_filename)
             self.logger.info("Subreport template %s" % subreport_template)
             if os.path.exists(subreport_filename):
-                if subreport_template in permitted_resources:
+                if self.permit_subreports or subreport_template in permitted_resources:
                     subreport_result = self.compile_report(subreport_filename, fill_params, tmpdir, resources, permitted_resources, single_report, True)
                     if not subreport_result:
                         self.logger.info("Failed to compile subreport %s" % subreport_filename)
@@ -274,7 +274,7 @@ class ReportCompiler:
                             if m:
                                 fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_filename, opened_connections)
                 else:
-                    self.logger.info("Filtering out unpermitted report %s" % subreport_filename)
+                    self.logger.info("Filtering out unpermitted subreport %s" % subreport_filename)
                     subreportExpression.text = ""
 
         # Write modified jrxml
@@ -377,6 +377,7 @@ class ReportCompiler:
         resources = (config.resources() or {}).get('document_templates', [])
 
         self.report_dir = config.get('report_dir', '/reports').rstrip('/')
+        self.permit_subreports = config.get('permit_subreports', False)
         self.logger.info("Report dir is '%s'", self.report_dir)
 
         if template not in permitted_resources:
