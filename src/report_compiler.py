@@ -276,6 +276,8 @@ class ReportCompiler:
                 else:
                     self.logger.info("Filtering out unpermitted subreport %s" % subreport_filename)
                     subreportExpression.text = ""
+            else:
+                self.logger.warning("Subreport path does not exist: %s" % subreport_filename)
 
         # Write modified jrxml
         ElementTree.register_namespace("", "http://jasperreports.sourceforge.net/jasperreports")
