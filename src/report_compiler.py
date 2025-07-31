@@ -253,7 +253,7 @@ class ReportCompiler:
         for subreport in subreports:
             connectionExpression = subreport.find("./jasper:connectionExpression", namespace)
             subreportExpression = subreport.find("./jasper:subreportExpression", namespace)
-            subreport_filename = subreportExpression.text.strip('"')
+            subreport_filename = subreportExpression.text.strip('"').replace('$P{REPORT_DIR}', self.report_dir)
             subreport_filename = os.path.abspath(os.path.join(os.path.dirname(report_filename), subreport_filename))
             subreport_filename = subreport_filename[:-7] + ".jrxml"
             subreport_template = subreport_filename[reportdir_idx:-6]
