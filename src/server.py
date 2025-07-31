@@ -78,13 +78,18 @@ def get_document_worker(config, permitted_resources, tenant, template, args, for
         classpath = glob.glob(os.path.join(libdir, '*.jar'))
         classpath.append(libdir)
 
+        locale = config.get('locale', 'en_US')
+        lang, country = locale.split("_")
         max_memory = config.get('max_memory', '1024M')
         app.logger.info("The maximum Java heap size is set to '%s'", max_memory)
 
         tmpdir = tempfile.mkdtemp()
-        jpype.startJVM("-DJava.awt.headless=true", "-Xmx" + max_memory, "-Djava.util.logging.config.file=" + os.path.join(libdir, "logging.properties"), classpath=classpath)
+        jpype.startJVM(f"-DJava.awt.headless=true", f"-Xmx{max_memory}", "-Djava.util.logging.config.file=" + os.path.join(libdir, "logging.properties"), classpath=classpath)
         jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
         jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
+        Locale = jpype.java.util.Locale
+        Locale.setDefault(Locale(lang, country));
+        app.logger.debug("JVM locale: %s" % Locale.getDefault())
 
         report_compiler = ReportCompiler(app.logger)
         result = report_compiler.get_document(config, permitted_resources, tenant, template, dict(request.args), format)
