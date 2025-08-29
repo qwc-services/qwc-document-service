@@ -7,3 +7,5 @@ https://jaspersoft.jfrog.io/artifactory/third-party-ce-artifacts/com/github/libr
 https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.7/postgresql-42.7.7.jar
 https://repo1.maven.org/maven2/net/sf/jasperreports/jasperreports-functions/6.21.5/jasperreports-functions-6.21.5.jar
 https://repo1.maven.org/maven2/org/eclipse/jdt/ecj/3.42.0/ecj-3.42.0.jar
+https://repo1.maven.org/maven2/org/jfree/jfreechart/1.0.19/jfreechart-1.0.19.jar
+https://repo1.maven.org/maven2/org/jfree/jcommon/1.0.23/jcommon-1.0.23.jar
