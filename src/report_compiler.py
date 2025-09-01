@@ -310,6 +310,8 @@ class ReportCompiler:
                             fill_params[data_param] = feature_id
                             jasperPrints.add(self.SimpleExporterInputItem(self.JasperFillManager.getInstance(self.jContext).fill(jasperReport, fill_params, conn)))
                     else:
+                        if data_param_nested_class is None:
+                            self.logger.error("Compiling with single_report=true, but %s is not defined as an array parameter" % data_param)
                         data_param_list = self.ArrayList()
                         for value in fill_params[data_param]:
                             data_param_list.add(jpype.JClass(data_param_nested_class)(value))
