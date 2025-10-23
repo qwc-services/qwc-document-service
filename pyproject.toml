@@ -13,7 +13,8 @@ dependencies = [
     "psycopg2~=2.9.10",
     "SQLAlchemy~=2.0.42",
     "qwc-services-core~=1.4.6",
-    "JPype1~=1.6.0"
+    "JPype1~=1.6.0",
+    "freetype-py>=2.5.1",
 ]
 
 [dependency-groups]

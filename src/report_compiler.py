@@ -1,4 +1,5 @@
 import configparser
+import freetype
 import glob
 import io
 import jpype
@@ -75,10 +76,25 @@ class ReportCompiler:
         self.logger.info("Looking for additional fonts in %s" % custom_fonts_dir)
         custom_fonts = {}
         for fontpath in glob.glob(os.path.join(custom_fonts_dir, "*.ttf")):
-            filename = os.path.basename(fontpath)
-            name, face = (filename[:-4] + "-Regular").split("-")[0:2]
-            custom_fonts[name] = custom_fonts.get(name, {})
-            custom_fonts[name][face] = fontpath
+            try:
+                ft_face = freetype.Face(fontpath)
+                font_name = ft_face.family_name.decode('utf-8')
+                is_bold = bool(ft_face.style_flags & freetype.FT_STYLE_FLAG_BOLD)
+                is_italic = bool(ft_face.style_flags & freetype.FT_STYLE_FLAG_ITALIC)
+                face = "Regular"
+                if is_bold and is_italic:
+                    face = "BoldItalic"
+                elif is_bold:
+                    face = "Bold"
+                elif is_italic:
+                    face = "Italic"
+                custom_fonts[font_name] = custom_fonts.get(font_name, {})
+                custom_fonts[font_name][face] = fontpath
+            except:
+                filename = os.path.basename(fontpath)
+                name, face = (filename[:-4] + "-Regular").split("-")[0:2]
+                custom_fonts[name] = custom_fonts.get(name, {})
+                custom_fonts[name][face] = fontpath
 
         fonts = self.ArrayList()
         for font_name, font_faces in custom_fonts.items():
