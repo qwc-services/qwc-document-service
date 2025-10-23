@@ -57,12 +57,7 @@ If your report includes external resources (i.e. images), place these below the 
 
 If you may have a very large amount of input data, the report generation might result in a very large output file. This can lead to an Out-of-memory exception. To handle this, a "Virtualizer" could be used, which will cut the report into different files and save them on the hard drive during the generation process. The result generally makes the generation of the report a bit slower but it will solve the memory exception. To use a "JRSwapFileVirtualizer" for report generation, the `virtualizer` configuration has to be set (see example below).
 
-If your report requires extra fonts, place the `*.ttfs` below the `src/fonts` directory (when running locally) resp. mount them inside the `/srv/qwc_service/fonts/` when running as docker container. Font names must respect the following naming convention:
-
-- Regular: `<FontName>.ttf` or `<FontName>-Regular.ttf`
-- Bold: `<FontName>-Bold.ttf`
-- Italic: `<FontName>-Italic.ttf`
-- BoldItalic: `<FontName>-BoldItalic.ttf`
+If your report requires extra fonts, place the `*.ttfs` below the `src/fonts` directory (when running locally) resp. mount them inside the `/srv/qwc_service/fonts/` when running as docker container. The font names and faces are read from the `*.tff` file metadata. Currently only static TTFs are supported, not variable font TTFs.
 
 Set `FLASK_DEBUG=1` to get additional logging output.
 
