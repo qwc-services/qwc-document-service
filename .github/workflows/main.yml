@@ -18,9 +18,9 @@ jobs:
       - name: Start demo database
         run: |
           cd qwc-docker
-          cp pg_service.conf ~/.pg_service.conf
-          sed -i 's|host=qwc-postgis|host=localhost|g' ~/.pg_service.conf
-          sed -i 's|port=5432|port=5439|g' ~/.pg_service.conf
+          cp pg_service.conf pg_service_local.conf
+          sed -i 's|host=qwc-postgis|host=localhost|g' pg_service_local.conf
+          sed -i 's|port=5432|port=5439|g' pg_service_local.conf
           sed -Ei "s|^(\s*POSTGRES_PASSWORD:).*$|\1 'waej7WuoOoth0wor'|" docker-compose-example.yml
           docker compose -f docker-compose-example.yml up -d qwc-postgis
 
@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
           wget -P src/libs -i libs.txt
-          FLASK_DEBUG=1 PYTHONPATH=$PWD/src FONT_DIR=$PWD/tests/fonts CONFIG_PATH=$PWD/tests/config/ python test.py
+          PGSERVICEFILE=$PWD/qwc-docker/pg_service_local.conf FLASK_DEBUG=1 PYTHONPATH=$PWD/src FONT_DIR=$PWD/tests/fonts CONFIG_PATH=$PWD/tests/config/ python test.py
 
       - name: Validate schema
         run: |
