@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import traceback
 
-from flask import Flask, Response, request, jsonify, make_response, Blueprint
+from flask import Flask, Response, request, jsonify, make_response, Blueprint, send_file
 from flask_restx import Api, Resource
 
 from qwc_services_core.app import app_nocache
@@ -92,12 +92,12 @@ def get_document_worker(config, permitted_resources, tenant, template, args, for
         app.logger.debug("JVM locale: %s" % Locale.getDefault())
 
         report_compiler = ReportCompiler(app.logger)
-        result = report_compiler.get_document(config, permitted_resources, tenant, template, dict(request.args), format)
+        result = report_compiler.get_document(config, permitted_resources, tenant, template, args, format)
 
     except Exception as e:
         app.logger.debug(str(e))
         app.logger.debug(traceback.format_exc())
-        result = make_response("Failed to compile report", 500)
+        result = 500, "Failed to compile report"
     finally:
         if jpype.isJVMStarted():
             jpype.shutdownJVM()
@@ -146,10 +146,34 @@ class Document(Resource):
         else:
             format = 'pdf'
 
-        with multiprocessing.Pool(1) as pool:
-            result = pool.apply(get_document_worker, args=(config, permitted_resources, tenant, template, dict(request.args), format))
+        supported_formats = {
+            "pdf": "application/pdf",
+            "html": "text/html",
+            "csv": "text/csv",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "ods": "application/vnd.oasis.opendocument.spreadsheet",
+            "odt": "application/vnd.oasis.opendocument.text",
+            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "rtf": "application/rtf",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xml": "application/xml"
+        }
+        if not format in supported_formats:
+            app.logger.warning("Unsupported format: %s" % format)
+            return make_response("Unsupported format: %s" % format, 400)
 
-        return result
+        with multiprocessing.Pool(1) as pool:
+            code, result = pool.apply(get_document_worker, args=(config, permitted_resources, tenant, template, dict(request.args), format))
+
+        if code == 200:
+            return send_file(
+                result,
+                download_name=template + "." + format,
+                as_attachment=True,
+                mimetype=supported_formats[format]
+            )
+        else:
+            return make_response(result, code)
 
 
 """ readyness probe endpoint """
