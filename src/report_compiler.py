@@ -421,7 +421,8 @@ class ReportCompiler:
             return 404, "Missing or restricted template: %s" % template
 
         # Set resource dir in fill_params
-        fill_params["REPORT_DIR"] = self.report_dir + "/"
+        fill_params["REPORT_DIR"] = self.report_dir.rstrip("/") + "/"
+        fill_params["ROOT_DIR"] = self.report_dir.rstrip("/") + "/"
 
         # Set the tenant in fill_params
         fill_params["TENANT"] = tenant
