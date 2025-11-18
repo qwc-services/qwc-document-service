@@ -20,9 +20,9 @@ class ApiTestCase(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def jwtHeader(self):
+    def jwtHeader(self, identity="test"):
         with server.app.test_request_context():
-            access_token = create_access_token('test')
+            access_token = create_access_token(identity)
         return {'Authorization': 'Bearer {}'.format(access_token)}
 
     def test_getdocument_pdf(self):
@@ -136,5 +136,109 @@ class ApiTestCase(unittest.TestCase):
             success = False
         self.assertEqual(200, response.status_code, "Status code is not OK")
         self.assertTrue(success, "Response is not a valid HTML")
-        self.assertTrue(html.count("Country name: ") == 255, "Generated HTML does not contain the expected number of countries")
+        self.assertEqual(html.count("Country name: "), 255, "Generated HTML does not contain the expected number of countries")
 
+    def test_country_aggregated_single_report_bad_html(self):
+        params = {
+            "feature": "4,5,6",
+            "single_report": 1
+        }
+        response = self.app.get('/Country.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            error = response.data.decode("utf-8")
+        except:
+            success = False
+        self.assertEqual(500, response.status_code, "Request didn't fail with internal server error")
+        self.assertEqual(error, "Failed to compile report")
+
+    def test_country_aggregated_single_report_html(self):
+        params = {
+            "feature": "4,5,6",
+            "single_report": 1
+        }
+        response = self.app.get('/Country_single.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertEqual(html.count("Country name: "), 3, "Generated HTML does not contain the expected number of countries")
+        self.assertTrue("Bolivia" in html, "Response does not contain Bolivia")
+        self.assertTrue("Peru" in html, "Response does not contain Peru")
+        self.assertTrue("Argentina" in html, "Response does not contain Argentina")
+
+    def test_point_report_unpermitted_subreport_html(self):
+        params = {
+            "feature": "1"
+        }
+        response = self.app.get('subdir/Point.html?' + urlencode(params), headers=self.jwtHeader())
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Point description: Example Point" in html, "Response does not contain 'Point description: Example Point'")
+        self.assertTrue("Country name:" not in html, "Response contains 'Country name:'")
+
+    def test_point_report_permitted_subreport_html(self):
+        params = {
+            "feature": "1",
+            "COUNTRY_ID": "5"
+        }
+        response = self.app.get('subdir/Point.html?' + urlencode(params), headers=self.jwtHeader("admin"))
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Point description: Example Point" in html, "Response does not contain 'Point description: Example Point'")
+        self.assertTrue("Country name: Peru" in html, "Response does not contain 'Country name: Peru'")
+
+    def test_point_report_precompiled_permit_subreports_html(self):
+        params = {
+            "feature": "1",
+            "COUNTRY_ID": "5"
+        }
+        os.environ['PERMIT_SUBREPORTS'] = '1'
+        response = self.app.get('subdir/Point.html?' + urlencode(params), headers=self.jwtHeader("admin"))
+        del os.environ['PERMIT_SUBREPORTS']
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Point description: Example Point" in html, "Response does not contain 'Point description: Example Point'")
+        self.assertTrue("Country name: Peru" in html, "Response does not contain 'Country name: Peru'")
+
+    def test_static_report_html(self):
+        params = {
+        }
+        response = self.app.get('Static.html?' + urlencode(params), headers=self.jwtHeader("admin"))
+        success = False
+        html = None
+        try:
+            html = response.data.decode("utf-8")
+            success = "<html" in html
+        except:
+            success = False
+        self.assertEqual(200, response.status_code, "Status code is not OK")
+        self.assertTrue(success, "Response is not a valid HTML")
+        self.assertTrue("Static text" in html, "Response does not contain 'Static text'")

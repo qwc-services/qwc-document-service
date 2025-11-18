@@ -1,6 +1,14 @@
 {
   "$schema": "https://github.com/qwc-services/qwc-services-core/raw/master/schemas/qwc-services-permissions.json",
-  "users": [],
+  "users": [{
+    "name": "admin",
+    "groups": [
+      "restrictedthemes"
+    ],
+    "roles": [
+      "admin"
+    ]
+  }],
   "groups": [],
   "roles": [
     {
@@ -8,7 +16,19 @@
       "permissions": {
         "document_templates": [
           "test_report",
-          "Country"
+          "Country",
+          "Country_single",
+          "subdir/Point",
+          "Point",
+          "Static"
+        ]
+      }
+    },
+    {
+      "role": "admin",
+      "permissions": {
+        "document_templates": [
+          "subdir/Country_subreport"
         ]
       }
     }

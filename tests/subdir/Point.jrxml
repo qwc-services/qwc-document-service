@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Jaspersoft Studio version 6.21.3.final using JasperReports Library version 6.21.3-4a3078d20785ebe464f18037d738d12fc98c13cf  -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Test" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e3e7f970-938d-44b9-8854-594680b1c3c3">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="qwc_geodb"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value="YW5pbWFscyAsMTUsMTUsNDA5ZGQ5MzgtMjRkMS00MzZmLThmZDQtNTBjZmExMDYyZjVhOw=="/>
+	<parameter name="FEATURE_ID" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[1]]></defaultValueExpression>
+	</parameter>
+	<parameter name="COUNTRY_ID" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_CONNECTION" class="java.sql.Connection"/>
+	<parameter name="REPORT_DIR" class="java.lang.String">
+		<defaultValueExpression><![CDATA["/"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT *
+FROM qwc_geodb.edit_points
+WHERE
+	 id = $P{FEATURE_ID}]]>
+	</queryString>
+	<field name="id" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="id"/>
+		<property name="com.jaspersoft.studio.field.label" value="id"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="edit_points"/>
+	</field>
+	<field name="name" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="name"/>
+		<property name="com.jaspersoft.studio.field.label" value="name"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="edit_points"/>
+	</field>
+	<field name="description" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="description"/>
+		<property name="com.jaspersoft.studio.field.label" value="description"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="edit_points"/>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="79" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="100" height="30" uuid="bcfad055-3966-416d-80a4-4db9fb33fbd4"/>
+				<textElement>
+					<font fontName="Caveat" size="20" isBold="true" pdfFontName="" pdfEncoding=""/>
+				</textElement>
+				<text><![CDATA[Point report]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="34" splitType="Stretch">
+			<textField>
+				<reportElement x="15" y="4" width="245" height="30" uuid="5a7b3894-65e1-468f-8555-4f0271105e7d"/>
+				<textFieldExpression><![CDATA["Point description: " + $F{description}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="61" splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="250" splitType="Stretch">
+			<subreport>
+				<reportElement x="0" y="0" width="550" height="110" isRemoveLineWhenBlank="true" uuid="ca7f303c-ca67-4485-baa7-ae56fc367144"/>
+				<subreportParameter name="COUNTRY_ID">
+					<subreportParameterExpression><![CDATA[$P{COUNTRY_ID}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{SUBREPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA[$P{REPORT_DIR} + "/subdir/Country_subreport.jasper"]]></subreportExpression>
+			</subreport>
+			<image>
+				<reportElement x="87" y="130" width="48" height="48" uuid="7b19b97b-644a-4902-84d9-c674e2e1e0c6"/>
+				<imageExpression><![CDATA[$P{REPORT_DIR} + "logo.png"]]></imageExpression>
+			</image>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="45" splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="54" splitType="Stretch"/>
+	</pageFooter>
+	<summary>
+		<band height="42" splitType="Stretch"/>
+	</summary>
+</jasperReport>

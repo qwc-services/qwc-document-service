@@ -6,6 +6,12 @@
   },
   "resources": {
     "document_templates": [
+      {
+        "template": "Country_single",
+        "table": "qwc_geodb.ne_10m_admin_0_countries",
+        "primary_key": "ogc_fid",
+        "parameter_name": "COUNTRY_ID"
+      }
     ]
   }
 }
