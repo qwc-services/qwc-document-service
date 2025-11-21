@@ -6,9 +6,11 @@ import multiprocessing
 import shutil
 import tempfile
 import traceback
+import atexit
 
 from flask import Flask, Response, request, jsonify, make_response, Blueprint, send_file
 from flask_restx import Api, Resource
+from concurrent.futures.process import BrokenProcessPool
 
 from qwc_services_core.app import app_nocache
 from qwc_services_core.auth import auth_manager, optional_auth, get_identity
@@ -68,11 +70,10 @@ def get_identity_or_auth(config):
             #     www_authenticate='Basic realm="Login Required"')
     return identity
 
+class Worker:
 
-def get_document_worker(config, permitted_resources, tenant, template, args, format):
-    result = None
-
-    try:
+    @staticmethod
+    def init_worker(config):
         app.logger.debug("Starting JVM")
         libdir = os.path.join(os.path.dirname(__file__), 'libs')
         classpath = glob.glob(os.path.join(libdir, '*.jar'))
@@ -83,40 +84,61 @@ def get_document_worker(config, permitted_resources, tenant, template, args, for
         max_memory = config.get('max_memory', '1024M')
         app.logger.info("The maximum Java heap size is set to '%s'", max_memory)
 
-        tmpdir = tempfile.mkdtemp()
         jpype.startJVM(f"-DJava.awt.headless=true", f"-Xmx{max_memory}", "-Djava.util.logging.config.file=" + os.path.join(libdir, "logging.properties"), classpath=classpath)
-        jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
-        jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
         Locale = jpype.java.util.Locale
         Locale.setDefault(Locale(lang, country));
         app.logger.debug("JVM locale: %s" % Locale.getDefault())
 
-        report_compiler = ReportCompiler(app.logger)
-        result = report_compiler.get_document(config, permitted_resources, tenant, template, args, format)
+        # register cleanup
+        atexit.register(Worker.cleanup_worker)
 
-    except Exception as e:
-        app.logger.debug(str(e))
-        app.logger.debug(traceback.format_exc())
-        result = 500, "Failed to compile report"
-    finally:
+    @staticmethod
+    def cleanup_worker():
         if jpype.isJVMStarted():
+            app.logger.debug("Shutting down JVM...")
             jpype.shutdownJVM()
-            app.logger.debug("Shutdown JVM")
 
-    try:
-        with open(os.path.join(tmpdir, "stdout")) as fh:
-            app.logger.debug("JVM stdout:\n" + fh.read())
-    except:
-        pass
-    try:
-        with open(os.path.join(tmpdir, "stderr")) as fh:
-            app.logger.debug("JVM stderr:\n" + fh.read())
-    except:
-        pass
-    shutil.rmtree(tmpdir)
+    @staticmethod
+    def process_job(config, permitted_resources, tenant, template, args, format):
+        try:
+            tmpdir = tempfile.mkdtemp()
+            jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
+            jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
 
-    return result
+            report_compiler = ReportCompiler(app.logger)
+            result = report_compiler.get_document(config, permitted_resources, tenant, template, args, format)
 
+            try:
+                with open(os.path.join(tmpdir, "stdout")) as fh:
+                    app.logger.debug("JVM stdout:\n" + fh.read())
+            except:
+                pass
+            try:
+                with open(os.path.join(tmpdir, "stderr")) as fh:
+                    app.logger.debug("JVM stderr:\n" + fh.read())
+            except:
+                pass
+            shutil.rmtree(tmpdir)
+
+        except Exception as e:
+            app.logger.debug(str(e))
+            app.logger.debug(traceback.format_exc())
+            result = 500, "Failed to compile report"
+
+        return result
+
+
+pools = {}
+
+def recreate_pool(tenant, config):
+    global pool
+    if tenant in pools:
+        pool.terminate()
+        pool.join()
+
+    pools[tenant] = multiprocessing.Pool(
+        processes=1, initializer=Worker.init_worker, initargs=(config,)
+    )
 
 # routes
 @api.route('/<path:template>')
@@ -162,8 +184,20 @@ class Document(Resource):
             app.logger.warning("Unsupported format: %s" % format)
             return make_response("Unsupported format: %s" % format, 400)
 
-        with multiprocessing.Pool(1) as pool:
-            code, result = pool.apply(get_document_worker, args=(config, permitted_resources, tenant, template, dict(request.args), format))
+        if not tenant in pools:
+            recreate_pool(tenant, config)
+
+        # Try 3 times
+        for i in range(0, 3):
+            app.logger.debug("Launching job attempt %d..." % i)
+            try:
+                code, result = pools[tenant].apply(Worker.process_job, args=(config, permitted_resources, tenant, template, dict(request.args), format))
+                break
+            except (BrokenProcessPool, EOFError):
+                rebuild_pool(tenant, config)
+        else:
+            code = 500
+            result = "Internal server error"
 
         if code == 200:
             return send_file(
