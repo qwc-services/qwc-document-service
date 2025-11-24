@@ -79,7 +79,6 @@ Example:
   "service": "document",
   "config": {
     "report_dir": "/path/to/report/dir",
-    "max_memory": "1024M",
     "virtualizer": {
       "swapfile_blocksize": 4096,
       "swapfile_mingrowcount" : 100,
@@ -103,6 +102,12 @@ Example:
 ### Environment variables
 
 Config options in the config file can be overridden by equivalent uppercase environment variables.
+
+In addition, the following environment variables can be set
+
+| Name                 | Description                                                                  |
+|----------------------|------------------------------------------------------------------------------|
+| `MAX_MEMORY`         | Maximum Java heap size for compiling like `1024M` or `2G`. Default: `1024M`. |
 
 ### Permissions
 

@@ -73,21 +73,16 @@ def get_identity_or_auth(config):
 class Worker:
 
     @staticmethod
-    def init_worker(config):
+    def init_worker():
         app.logger.debug("Starting JVM")
         libdir = os.path.join(os.path.dirname(__file__), 'libs')
         classpath = glob.glob(os.path.join(libdir, '*.jar'))
         classpath.append(libdir)
 
-        locale = config.get('locale', 'en_US')
-        lang, country = locale.split("_")
-        max_memory = config.get('max_memory', '1024M')
+        max_memory = os.environ.get('MAX_MEMORY', '1024M')
         app.logger.info("The maximum Java heap size is set to '%s'", max_memory)
 
         jpype.startJVM(f"-DJava.awt.headless=true", f"-Xmx{max_memory}", "-Djava.util.logging.config.file=" + os.path.join(libdir, "logging.properties"), classpath=classpath)
-        Locale = jpype.java.util.Locale
-        Locale.setDefault(Locale(lang, country));
-        app.logger.debug("JVM locale: %s" % Locale.getDefault())
 
         # register cleanup
         atexit.register(Worker.cleanup_worker)
@@ -104,6 +99,12 @@ class Worker:
             tmpdir = tempfile.mkdtemp()
             jpype.java.lang.System.setOut(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stdout"))))
             jpype.java.lang.System.setErr(jpype.java.io.PrintStream(jpype.java.io.File(os.path.join(tmpdir, "stderr"))))
+
+            locale = config.get('locale', 'en_US')
+            lang, country = locale.split("_")
+            Locale = jpype.java.util.Locale
+            Locale.setDefault(Locale(lang, country))
+            app.logger.info("JVM locale: %s" % Locale.getDefault())
 
             report_compiler = ReportCompiler(app.logger)
             result = report_compiler.get_document(config, permitted_resources, tenant, template, args, format)
@@ -128,16 +129,16 @@ class Worker:
         return result
 
 
-pools = {}
+pool = multiprocessing.Pool(
+    processes=1, initializer=Worker.init_worker
+)
 
-def recreate_pool(tenant, config):
+def recreate_pool():
     global pool
-    if tenant in pools:
-        pool.terminate()
-        pool.join()
-
-    pools[tenant] = multiprocessing.Pool(
-        processes=1, initializer=Worker.init_worker, initargs=(config,)
+    pool.terminate()
+    pool.join()
+    pool = multiprocessing.Pool(
+        processes=1, initializer=Worker.init_worker
     )
 
 # routes
@@ -184,17 +185,14 @@ class Document(Resource):
             app.logger.warning("Unsupported format: %s" % format)
             return make_response("Unsupported format: %s" % format, 400)
 
-        if not tenant in pools:
-            recreate_pool(tenant, config)
-
         # Try 3 times
         for i in range(0, 3):
             app.logger.debug("Launching job attempt %d..." % i)
             try:
-                code, result = pools[tenant].apply(Worker.process_job, args=(config, permitted_resources, tenant, template, dict(request.args), format))
+                code, result = pool.apply(Worker.process_job, args=(config, permitted_resources, tenant, template, dict(request.args), format))
                 break
             except (BrokenProcessPool, EOFError):
-                rebuild_pool(tenant, config)
+                recreate_pool()
         else:
             code = 500
             result = "Internal server error"
