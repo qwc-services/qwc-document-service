@@ -348,14 +348,14 @@ class ReportCompiler:
                     subreport_conn = self.jasper_prop_text_value(element.getConnectionExpression())
                     subreport = self.JRLoader.loadObjectFromFile(subreport_file)
                     subreport_datasource = self.jasper_prop_value(subreport.getProperty("com.jaspersoft.studio.data.defaultdataadapter"))
-                    m = re.match(r'^\$P\{(\w+)\}$', subreport_conn or "")
-                    if m:
-                        fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_file, opened_connections)
                     for param in subreport.getParameters():
                         name = param.getName();
                         klass = param.getValueClass()
                         if name in fill_params:
                             fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                    m = re.match(r'^\$P\{(\w+)\}$', subreport_conn or "")
+                    if m:
+                        fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_file, opened_connections)
                     self.collect_subreport_params(subreport, fill_params, opened_connections, subreport_file, os.path.dirname(subreport_file))
 
     def jasper_prop_value(self, prop):
