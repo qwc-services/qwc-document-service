@@ -291,44 +291,41 @@ class ReportCompiler:
         temp_report_filename = os.path.join(tmpdir, template + ".jrxml")
         os.makedirs(os.path.dirname(temp_report_filename), exist_ok=True)
 
-        if not self.permit_subreports:
-            # Parse report
-            with open(report_filename) as fh:
-                doc = ElementTree.parse(fh)
-            if not doc:
-                self.logger.error("Failed to read report %s" % report_filename)
-                return None
-            root = doc.getroot()
-            namespace = {'jasper': 'http://jasperreports.sourceforge.net/jasperreports'}
+        # Parse report
+        with open(report_filename) as fh:
+            doc = ElementTree.parse(fh)
+        if not doc:
+            self.logger.error("Failed to read report %s" % report_filename)
+            return None
+        root = doc.getroot()
+        namespace = {'jasper': 'http://jasperreports.sourceforge.net/jasperreports'}
 
-            # Iterate over subreports, filter out unpermitted reports, compile permitted reports
-            subreports = root.findall(".//jasper:subreport", namespace)
-            for subreport in subreports:
-                connectionExpression = subreport.find("./jasper:connectionExpression", namespace)
-                subreportExpression = subreport.find("./jasper:subreportExpression", namespace)
-                subreport_filename = self.evaluate_subreport_expression(subreportExpression.text, tmpdir, os.path.dirname(temp_report_filename))
-                subreport_template = os.path.relpath(subreport_filename, tmpdir)[:-7]
-                self.logger.info("Subreport filename %s" % subreport_filename)
-                self.logger.info("Subreport template %s" % subreport_template)
-                if os.path.exists(os.path.join(self.report_dir, subreport_template + ".jrxml")):
-                    if self.permit_subreports or subreport_template in permitted_resources:
-                        subreportExpression.text = '"%s"' % subreport_filename
-                        subreport_jasper = self.compile_report(subreport_template, tmpdir, permitted_resources)
-                        if not subreport_jasper:
-                            return None
-                    else:
-                        self.logger.info("Filtering out unpermitted subreport %s" % subreport_template)
-                        subreportExpression.text = ""
+        # Iterate over subreports, filter out unpermitted reports, compile permitted reports
+        subreports = root.findall(".//jasper:subreport", namespace)
+        for subreport in subreports:
+            connectionExpression = subreport.find("./jasper:connectionExpression", namespace)
+            subreportExpression = subreport.find("./jasper:subreportExpression", namespace)
+            subreport_filename = self.evaluate_subreport_expression(subreportExpression.text, tmpdir, os.path.dirname(temp_report_filename))
+            subreport_template = os.path.relpath(subreport_filename, tmpdir)[:-7]
+            self.logger.info("Subreport filename %s" % subreport_filename)
+            self.logger.info("Subreport template %s" % subreport_template)
+            if os.path.exists(os.path.join(self.report_dir, subreport_template + ".jrxml")):
+                if self.permit_subreports or subreport_template in permitted_resources:
+                    subreportExpression.text = '"%s"' % subreport_filename
+                    subreport_jasper = self.compile_report(subreport_template, tmpdir, permitted_resources)
+                    if not subreport_jasper:
+                        return None
                 else:
-                    self.logger.warning("Subreport path does not exist: %s" % subreport_filename)
-                    return None
-            # Write modified jrxml
-            self.logger.info("Saving filtered report to %s" % temp_report_filename)
-            ElementTree.register_namespace("", "http://jasperreports.sourceforge.net/jasperreports")
-            ElementTree.ElementTree(root).write(temp_report_filename)
-        else:
-            self.logger.info("Copying report to %s" % temp_report_filename)
-            shutil.copyfile(report_filename, temp_report_filename)
+                    self.logger.info("Filtering out unpermitted subreport %s" % subreport_template)
+                    subreportExpression.text = ""
+            else:
+                self.logger.warning("Subreport path does not exist: %s" % subreport_filename)
+                return None
+
+        # Write modified jrxml
+        self.logger.info("Saving filtered report to %s" % temp_report_filename)
+        ElementTree.register_namespace("", "http://jasperreports.sourceforge.net/jasperreports")
+        ElementTree.ElementTree(root).write(temp_report_filename)
 
         self.logger.info("Compiling %s" % temp_report_filename)
         output_name = temp_report_filename[:-6] + ".jasper"
