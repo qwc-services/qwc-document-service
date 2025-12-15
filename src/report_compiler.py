@@ -349,7 +349,15 @@ class ReportCompiler:
                         name = param.getName();
                         klass = param.getValueClass()
                         if name in fill_params:
-                            fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                            if klass.isInterface():
+                                self.logger.debug(f"Skipping conversion of interface parameter {name} of type {klass}")
+                                continue
+
+                            # Skip other non-instantiable types
+                            try:
+                                fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                            except Exception as e:
+                                self.logger.debug(f"Skipping conversion of parameter {name}: {e}")
                     m = re.match(r'^\$P\{(\w+)\}$', subreport_conn or "")
                     if m:
                         fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_file, opened_connections)
