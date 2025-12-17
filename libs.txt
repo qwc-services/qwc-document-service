@@ -10,3 +10,4 @@ https://repo1.maven.org/maven2/net/sf/jasperreports/jasperreports-functions/6.21
 https://repo1.maven.org/maven2/org/eclipse/jdt/ecj/3.43.0/ecj-3.43.0.jar
 https://repo1.maven.org/maven2/org/jfree/jfreechart/1.0.19/jfreechart-1.0.19.jar
 https://repo1.maven.org/maven2/org/jfree/jcommon/1.0.24/jcommon-1.0.24.jar
+https://repo1.maven.org/maven2/org/w3c/jigsaw/jigsaw/2.2.6/jigsaw-2.2.6.jar
