@@ -12,6 +12,7 @@ HOME=/tmp gunicorn \
     --threads $UWSGI_THREADS \
     --worker-class gthread \
     --pythonpath /srv/qwc_service/.venv/lib/python*/site-packages \
+    --env SCRIPT_NAME=$SERVICE_MOUNTPOINT \
     --access-logfile - \
     -c /tmp/gunicorn.conf.py \
     server:app
