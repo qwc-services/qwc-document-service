@@ -18,7 +18,7 @@ is `topic/myreport`.
 
 The request format is
 
-    http://localhost:5018/<template>.<ext>?<key>=<value>&...
+    http://localhost:5000/<template>.<ext>?<key>=<value>&...
 
 where
 
@@ -27,7 +27,7 @@ where
 
 Example request:
 
-    http://localhost:5018/topic/myreport.pdf?FEATURE_ID=1
+    http://localhost:5000/topic/myreport.pdf?FEATURE_ID=1
 
 If your report uses a PostgresSQL data adapter, use the name of the desired PG service connection as data adapter name in the report, and the connection will be automatically looked up from the `pg_service.conf` file. Alternatively, you can set the name of the desired PG service connection as `datasource` of in the service resource configuration, see below.
 
@@ -35,11 +35,11 @@ You can generically pass the generic `feature` query parameter, which will be re
 
 - A single or a comma-separated list of feature ids, i.e.
 
-      http://localhost:5018/topic/myreport.pdf?feature=1,3,6,9
+      http://localhost:5000/topic/myreport.pdf?feature=1,3,6,9
 
 - `*` to specify all features of the report datasource, i.e.
 
-      http://localhost:5018/topic/myreport.pdf?feature=*
+      http://localhost:5000/topic/myreport.pdf?feature=*
 
 If multiple feature ids are specified, an aggregated report for all specified features will be returned.
 
@@ -105,9 +105,11 @@ Config options in the config file can be overridden by equivalent uppercase envi
 
 In addition, the following environment variables can be set
 
-| Name                 | Description                                                                  |
-|----------------------|------------------------------------------------------------------------------|
-| `MAX_MEMORY`         | Maximum Java heap size for compiling like `1024M` or `2G`. Default: `1024M`. |
+| Name                 | Default              | Description                                                                  |
+|----------------------|----------------------|------------------------------------------------------------------------------|
+| `MAX_MEMORY`         | `1024M`              | Maximum Java heap size for compiling, for example `1024M` or `2G`.           |
+| `FONT_DIR`           | `./fonts`            | Directory where custom fonts are located.                                    |
+| `PGSERVICEFILE`      | `~/.pg_service.conf` | PG Service file location, used to resolve PG service names.                  |
 
 ### Permissions
 
@@ -152,52 +154,33 @@ Example:
 }
 ```
 
-Usage
------
+Run locally
+-----------
+
+Install dependencies and run:
+
+    # Setup venv
+    uv venv .venv
+
+    # Fetch JAR dependencies
+    wget -P src/libs -i libs.txt
+
+    export CONFIG_PATH=<CONFIG_PATH>
+    uv run src/server.py
+
+To use configs from a `qwc-docker` setup, set `CONFIG_PATH=<...>/qwc-docker/volumes/config`.
+
+Set `FLASK_DEBUG=1` for additional debug output.
+
+Set `FLASK_RUN_PORT=<port>` to change the default port (default: `5000`).
 
 API documentation:
 
-    http://localhost:5018/api/
-
-Request format:
-
-    http://localhost:5018/<template>?<key>=<value>&...
-
-Example:
-
-    http://localhost:5018/BelasteteStandorte.pdf
-
-Arbitrary parameters can be appended to the request:
-
-    http://localhost:5018/BelasteteStandorte.pdf?feature=123
-
-The format of the report is extracted from the template name, i.e.
-
-    http://localhost:5018/BelasteteStandorte.xls?feature=123
-
-If no extension is present in the template name, PDF is used as format.
+    http://localhost:5000/api/
 
 Docker usage
 ------------
 
+The Docker image is published on [Dockerhub](https://hub.docker.com/r/sourcepole/qwc-document-auth).
+
 See sample [docker-compose.yml](https://github.com/qwc-services/qwc-docker/blob/master/docker-compose-example.yml) of [qwc-docker](https://github.com/qwc-services/qwc-docker).
-
-Development
------------
-
-Install requirements:
-
-    uv sync
-    wget -P src/libs -i libs.txt
-
-Start local service:
-
-    CONFIG_PATH=/PATH/TO/CONFIGS/ uv run src/server.py
-
-
-Testing
--------
-
-Run all tests:
-
-    FLASK_DEBUG=1 PYTHONPATH=$PWD/src FONT_DIR=$PWD/tests/fonts CONFIG_PATH=$PWD/tests/config/ uv run test.py
