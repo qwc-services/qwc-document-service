@@ -237,6 +237,15 @@ class ReportCompiler:
             name = param.getName();
             klass = param.getValueClass()
             if name in fill_params:
+                if klass.isInterface():
+                    self.logger.debug(f"Skipping conversion of interface parameter {name} of type {klass}")
+                    continue
+
+                # Skip other non-instantiable types
+                try:
+                    fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                except Exception as e:
+                    self.logger.debug(f"Skipping conversion of parameter {name}: {e}")
                 if name == data_param:
                     if single_report:
                         nestedKlass = param.getNestedType()
