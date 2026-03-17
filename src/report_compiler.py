@@ -243,14 +243,23 @@ class ReportCompiler:
                         if not nestedKlass:
                             self.logger.error("Compiling with single_report=true, but %s is not defined as an array parameter" % data_param)
                             return None
-                        data_param_list = self.ArrayList()
-                        for value in fill_params[data_param]:
-                            data_param_list.add(jpype.JClass(nestedKlass)(value))
-                        fill_params[data_param] = data_param_list
+                        try:
+                            data_param_list = self.ArrayList()
+                            for value in fill_params[data_param]:
+                                data_param_list.add(jpype.JClass(nestedKlass)(value))
+                            fill_params[data_param] = data_param_list
+                        except Exception as e:
+                            self.logger.debug(f"Cannot cast array parameter {data_param} items to Java class {str(nestedKlass)}: {e}")
                     else:
-                        fill_params[data_param] = [jpype.JClass(klass)(entry) for entry in fill_params[name]]
+                        try:
+                            fill_params[data_param] = [jpype.JClass(klass)(entry) for entry in fill_params[name]]
+                        except Exception as e:
+                            self.logger.debug(f"Cannot cast array parameter {data_param} items to Java class {str(klass)}: {e}")
                 else:
-                    fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                    try:
+                        fill_params[name] = jpype.JClass(klass)(fill_params[name])
+                    except Exception as e:
+                        self.logger.debug(f"Cannot cast parameter {name} to Java class {str(klass)}: {e}")
 
         # Collect subreport datasources and inject them into fill_params
         opened_connections = []
@@ -349,15 +358,10 @@ class ReportCompiler:
                         name = param.getName();
                         klass = param.getValueClass()
                         if name in fill_params:
-                            if klass.isInterface():
-                                self.logger.debug(f"Skipping conversion of interface parameter {name} of type {klass}")
-                                continue
-
-                            # Skip other non-instantiable types
                             try:
                                 fill_params[name] = jpype.JClass(klass)(fill_params[name])
                             except Exception as e:
-                                self.logger.debug(f"Skipping conversion of parameter {name}: {e}")
+                                self.logger.debug(f"Cannot cast parameter {name} to Java class {str(klass)}: {e}")
                     m = re.match(r'^\$P\{(\w+)\}$', subreport_conn or "")
                     if m:
                         fill_params[m.group(1)] = self.resolve_datasource(subreport_datasource, subreport_file, opened_connections)
