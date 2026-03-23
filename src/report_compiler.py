@@ -234,7 +234,7 @@ class ReportCompiler:
 
         # Iterate over parameters, cast fill parameters to java types
         for param in jasper_report.getParameters():
-            name = param.getName();
+            name = param.getName()
             klass = param.getValueClass()
             if name in fill_params:
                 if klass.isInterface():
@@ -364,9 +364,12 @@ class ReportCompiler:
                     subreport = self.JRLoader.loadObjectFromFile(subreport_file)
                     subreport_datasource = self.jasper_prop_value(subreport.getProperty("com.jaspersoft.studio.data.defaultdataadapter"))
                     for param in subreport.getParameters():
-                        name = param.getName();
+                        name = param.getName()
                         klass = param.getValueClass()
                         if name in fill_params:
+                            if klass.isInterface():
+                                self.logger.debug(f"Skipping conversion of interface parameter {name} of type {klass}")
+                                continue
                             try:
                                 fill_params[name] = jpype.JClass(klass)(fill_params[name])
                             except Exception as e:
