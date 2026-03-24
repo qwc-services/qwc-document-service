@@ -43,13 +43,20 @@ You can generically pass the generic `feature` query parameter, which will be re
 
 If multiple feature ids are specified, an aggregated report for all specified features will be returned.
 
-Alternatively, provided `FEATURE_ID` is defined as a list in your report, you can pass `single_report=true`, and the entire list of feature ids will be passed to the report, which can i.e. render them in a table.
-
 To map `feature` to the report feature parameter, and to resolve `feature=*`, the table name, primary key column and report feature parameter will be extracted, if possible, from the report query string, which is expected to be of the form
 
     SELECT <...> FROM <table_name> WHERE <pk_column> = $P{<FEATURE_PARAM_NAME>}
 
 For more complex queries, you'll need to define `table`, `primary_key` and `parameter_name` in the report resource configuration, see below. Note that the value(s) of the `feature` query parameters are expected to be primary keys of the records of the table specified in the report query string.
+
+If you pass a list of features you can add `single_report=true` to the request, and the entire list of feature ids will be passed to the report, which can i.e. render them in a table. 
+Therefore the provided parameter `FEATURE_ID` has to be defined as a list by assigning the class `java.util.ArrayList` and `java.lang.String` as nested type name in the report definition. 
+
+Furthermore adjust the report query string in the form of:
+
+    SELECT <...> FROM <table_name> WHERE $X{IN, <pk_column>, <FEATURE_PARAM_NAME>}
+
+As this is a "complex query", you need to define `table`, `primary_key` and `parameter_name` in the report resource configuration as mentioned above.
 
 If your report includes external resources (i.e. images), place these below the `report_dir` and, add a `REPORT_DIR` parameter of type `java.lang.String` in the `.jrxml` and use `$P{REPORT_DIR}` in the resource location expression, for example:
 
