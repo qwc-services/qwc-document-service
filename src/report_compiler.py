@@ -66,7 +66,7 @@ class ReportCompiler:
         self.JRXmlExporter = jpype.JPackage('net').sf.jasperreports.engine.export.JRXmlExporter
         self.DefaultJasperReportsContext = jpype.JPackage('net').sf.jasperreports.engine.DefaultJasperReportsContext
 
-        self.DefaultJasperReportsContext.getInstance().setProperty("net.sf.jasperreports.compiler.temp.dir", "/tmp/");
+        self.DefaultJasperReportsContext.getInstance().setProperty("net.sf.jasperreports.compiler.temp.dir", "/tmp/")
         self.DefaultJasperReportsContext.getInstance().setProperty("net.sf.jasperreports.awt.ignore.missing.font", "true")
         self.DefaultJasperReportsContext.getInstance().setProperty("net.sf.jasperreports.default.font.name", "DejaVu Sans")
 
@@ -234,7 +234,7 @@ class ReportCompiler:
 
         # Iterate over parameters, cast fill parameters to java types
         for param in jasper_report.getParameters():
-            name = param.getName();
+            name = param.getName()
             klass = param.getValueClass()
             if name in fill_params:
                 if name == data_param:
@@ -355,7 +355,7 @@ class ReportCompiler:
                     subreport = self.JRLoader.loadObjectFromFile(subreport_file)
                     subreport_datasource = self.jasper_prop_value(subreport.getProperty("com.jaspersoft.studio.data.defaultdataadapter"))
                     for param in subreport.getParameters():
-                        name = param.getName();
+                        name = param.getName()
                         klass = param.getValueClass()
                         if name in fill_params:
                             try:
