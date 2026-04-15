@@ -20,6 +20,24 @@ from qwc_services_core.runtime_config import RuntimeConfig
 from qwc_services_core.permissions_reader import PermissionsReader
 from report_compiler import ReportCompiler
 
+class PrefixMiddleware:
+    def __init__(self, app, prefix):
+        self.app = app
+        self.prefix = prefix.rstrip("/")
+
+    def __call__(self, environ, start_response):
+        print(environ)
+        path = environ.get("PATH_INFO", "")
+        script_name = environ.get("SCRIPT_NAME", "")
+
+        if path.startswith(self.prefix):
+            environ["SCRIPT_NAME"] = script_name + self.prefix
+            environ["PATH_INFO"] = path[len(self.prefix):] or "/"
+        else:
+            # internal call → no prefix
+            environ["SCRIPT_NAME"] = ""
+
+        return self.app(environ, start_response)
 
 # Flask application
 app = Flask(__name__)
@@ -41,6 +59,8 @@ auth = auth_manager(app, api)
 tenant_handler = TenantHandler(app.logger)
 app.wsgi_app = TenantPrefixMiddleware(app.wsgi_app)
 app.session_interface = TenantSessionInterface()
+
+app.wsgi_app = PrefixMiddleware(app.wsgi_app, os.environ.get('SERVICE_MOUNTPOINT', ''))
 
 config_handler = RuntimeConfig("document", app.logger)
 
