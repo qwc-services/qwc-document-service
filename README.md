@@ -49,7 +49,7 @@ To map `feature` to the report feature parameter, and to resolve `feature=*`, th
 
 For more complex queries, you'll need to define `table`, `primary_key` and `parameter_name` in the report resource configuration, see below. Note that the value(s) of the `feature` query parameters are expected to be primary keys of the records of the table specified in the report query string.
 
-If you pass a list of features you can add `single_report=true` to the request, and the entire list of feature ids will be passed to the report, which can i.e. render them in a table. Therefore the provided parameter `FEATURE_ID` has to be defined as a list by assigning the class `java.util.ArrayList` and a nested type name (like `java.lang.String` or `java.lang.Number`) in the report definition.
+If you pass a list of features you can add `single_report=true` to the request, and the entire list of feature ids will be passed to the report, which can i.e. render them in a table. Therefore the provided parameter `FEATURE_ID` has to be defined as a list by assigning the class `java.util.List` and a nested type name (like `java.lang.String` or `java.lang.Number`) in the report definition.
 
 Furthermore adjust the report query string in the form of:
 
