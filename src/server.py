@@ -9,9 +9,10 @@ import traceback
 import atexit
 
 from flask import Flask, Response, request, jsonify, make_response, send_file
-from flask_restx import Api, Resource
+from flask_restx import Resource
 from concurrent.futures.process import BrokenProcessPool
 
+from qwc_services_core.api import Api
 from qwc_services_core.app import app_nocache
 from qwc_services_core.auth import auth_manager, optional_auth, get_identity
 from qwc_services_core.tenant_handler import (
