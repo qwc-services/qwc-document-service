@@ -32,7 +32,7 @@ jobs:
           docker compose -f docker-compose-example.yml up -d qwc-postgis
 
       - name: Setting up python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
             python-version: '3.12'
 
