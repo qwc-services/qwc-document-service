@@ -27,7 +27,6 @@ class PrefixMiddleware:
         self.prefix = prefix.rstrip("/")
 
     def __call__(self, environ, start_response):
-        print(environ)
         path = environ.get("PATH_INFO", "")
         script_name = environ.get("SCRIPT_NAME", "")
 
