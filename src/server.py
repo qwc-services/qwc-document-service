@@ -75,7 +75,7 @@ def get_identity_or_auth(config):
             if tenant_handler.tenant_header:
                 # forward tenant header
                 headers[tenant_handler.tenant_header] = tenant_handler.tenant()
-            for login_url in ogc_service.basic_auth_login_url:
+            for login_url in config.get("basic_auth_login_url"):
                 app.logger.debug(f"Checking basic auth via {login_url}")
                 data = {'username': auth.username, 'password': auth.password}
                 resp = requests.post(login_url, data=data, headers=headers)
